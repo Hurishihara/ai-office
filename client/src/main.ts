@@ -38,7 +38,7 @@ const keys = new Keys(window); // Task 4's panel/elevator call keys.setEnabled(f
 
 const prompt = document.createElement("div");
 prompt.textContent = "E";
-prompt.style.cssText = "display:none;position:absolute;pointer-events:none;padding:2px 8px;border-radius:4px;background:#fff;color:#111;font:bold 14px system-ui";
+prompt.style.cssText = "position:absolute;pointer-events:none;padding:2px 8px;border-radius:4px;background:#fff;color:#111;font:bold 14px system-ui";
 const promptObj = new CSS2DObject(prompt);
 promptObj.position.y = 2.2;
 player.mesh.add(promptObj);
@@ -62,7 +62,7 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   player.update(dt, keys.direction(), FLOORS[player.floor]);
-  prompt.style.display = inRange() ? "block" : "none";
+  promptObj.visible = !!inRange(); // CSS2DRenderer owns element.style.display
   followCam.follow(eye.set(player.pos.x, tower.floorY(player.floor) + 1.5, 0), dt);
   renderer.render(scene, camera);
   labels.render(scene, camera);

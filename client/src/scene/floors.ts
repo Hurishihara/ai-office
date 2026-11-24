@@ -19,7 +19,7 @@ const walls = (): Box2D[] => [
   { minX: hw, maxX: hw + T, minZ: -hd, maxZ: hd }, // right
   { minX: -hw - T, maxX: hw + T, minZ: hd, maxZ: hd + T }, // front: open to the camera, but the player can't walk off the slab
 ];
-const elevator = (): Interactable => ({ id: "elevator", x: SHAFT_X, z: 0, radius: 1.5 });
+const elevator = (): Interactable => ({ id: "elevator", x: SHAFT_X, z: 0, radius: 4 }); // 4 > hypot(1.5, 3.7): covers every reachable point in the shaft footprint, corners included
 
 // Furniture footprints, shared with tower.ts so meshes match colliders.
 export const FURNITURE: Partial<Record<FloorId, Box2D[]>> = {
