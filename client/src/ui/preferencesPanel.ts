@@ -1,6 +1,6 @@
 import type { Preferences } from "@ai-office/shared";
 import { api, errorText } from "../api";
-import { Panel } from "./panel";
+import { Panel, withBusy } from "./panel";
 
 const TEXT_FIELDS = [["tone", "Tone"], ["audience", "Audience"], ["hashtags", "Hashtags"], ["extra", "Extra instructions"]] as const;
 
@@ -24,11 +24,11 @@ export function openPreferencesPanel(): void {
   status.setAttribute("role", "status");
   panel.body.append(save, status);
 
-  save.onclick = async () => {
+  save.onclick = () => withBusy(save, async () => {
     const p = { emoji: emoji.value as Preferences["emoji"] } as Preferences;
     for (const [k] of TEXT_FIELDS) p[k] = inputs[k].value;
     try { await api.savePreferences(p); status.textContent = "Saved"; } catch (e) { status.textContent = errorText(e); }
-  };
+  });
 
   panel.open();
   api.getPreferences().then((p) => {

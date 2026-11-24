@@ -48,3 +48,10 @@ export class Panel {
     this.opts.onClose?.();
   }
 }
+
+// Disables the button while fn runs so a double-click can't fire the request twice.
+export async function withBusy(btn: { disabled: boolean }, fn: () => Promise<unknown>): Promise<void> {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try { await fn(); } finally { btn.disabled = false; }
+}

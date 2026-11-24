@@ -1,7 +1,7 @@
 import { countChars, NOTE_ERRORS, type NoteSummary } from "@ai-office/shared";
 import { api, errorText } from "../api";
 import { filterDroppedFiles } from "./files";
-import { Panel } from "./panel";
+import { Panel, withBusy } from "./panel";
 
 const MAX_TITLE = 200;
 const clip = (s: string) => (countChars(s) > MAX_TITLE ? [...s].slice(0, MAX_TITLE).join("") : s); // code points, not UTF-16 units
@@ -30,15 +30,15 @@ export function openNotesPanel(): void {
       const li = document.createElement("li");
       const del = Object.assign(document.createElement("button"), { textContent: "✕" });
       del.setAttribute("aria-label", `Delete ${n.title}`);
-      del.onclick = async () => {
+      del.onclick = () => withBusy(del, async () => {
         try { await api.deleteNote(n.id); await refresh(); } catch (e) { say([errorText(e)]); }
-      };
+      });
       li.append(del, Object.assign(document.createElement("span"), { textContent: ` ${n.title} — ${n.preview}` }));
       return li;
     }));
   };
 
-  add.onclick = async () => {
+  add.onclick = () => withBusy(add, async () => {
     if (!text.value.trim()) return say([NOTE_ERRORS.empty]);
     try {
       await api.addNote({ title: title.value.trim() ? clip(title.value.trim()) : firstLine(text.value), text: text.value, source: "typed" });
@@ -46,7 +46,7 @@ export function openNotesPanel(): void {
       say([]);
       await refresh();
     } catch (e) { say([errorText(e)]); }
-  };
+  });
 
   drop.addEventListener("dragover", (e) => e.preventDefault()); // without this, drop never fires
   drop.addEventListener("drop", async (e) => {

@@ -1,6 +1,6 @@
 import type { ModelInfo } from "@ai-office/shared";
 import { api, errorText } from "../api";
-import { Panel } from "./panel";
+import { Panel, withBusy } from "./panel";
 
 export function openReceptionPanel(): void {
   const panel = new Panel({ title: "Reception — models" });
@@ -38,12 +38,12 @@ export function openReceptionPanel(): void {
     } catch (e) { status.textContent = errorText(e); }
   };
   free.onchange = () => load({ writer: selects.writer.value, qa: selects.qa.value });
-  save.onclick = async () => {
+  save.onclick = () => withBusy(save, async () => {
     try {
       await api.saveSettings({ writerModel: selects.writer.value, qaModel: selects.qa.value });
       status.textContent = "Saved";
     } catch (e) { status.textContent = errorText(e); }
-  };
+  });
 
   panel.open();
   api.getSettings().then((s) => load({ writer: s.writerModel, qa: s.qaModel })).catch((e) => { status.textContent = errorText(e); });
