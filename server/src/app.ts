@@ -7,6 +7,10 @@ import { notesRouter } from "./routes/notes.js";
 import type { ModelCatalog } from "./models/catalog.js";
 import { modelsRouter } from "./routes/models.js";
 import { settingsRouter } from "./routes/settings.js";
+import type { AssignmentService } from "./pipeline/assignments.js";
+import { assignmentsRouter } from "./routes/assignments.js";
+import type { EventBus } from "./events.js";
+import { eventsRouter } from "./routes/events.js";
 
 export interface AppDeps { // grows one field per task; routers mount only when their dep is present
   preferences: PreferencesStore;
@@ -14,6 +18,8 @@ export interface AppDeps { // grows one field per task; routers mount only when 
   notes: NoteService;
   catalog: ModelCatalog;
   chromaUrl: string; // only used in the notes 503 message
+  assignments: AssignmentService;
+  bus: EventBus;
 }
 
 export function createApp(deps: Partial<AppDeps> = {}): express.Express {
@@ -26,5 +32,7 @@ export function createApp(deps: Partial<AppDeps> = {}): express.Express {
   if (deps.settings) app.use("/api/settings", settingsRouter(deps.settings));
   if (deps.notes) app.use("/api/notes", notesRouter(deps.notes, deps.chromaUrl ?? "http://localhost:8000"));
   if (deps.catalog) app.use("/api/models", modelsRouter(deps.catalog));
+  if (deps.assignments) app.use("/api/assignments", assignmentsRouter(deps.assignments));
+  if (deps.bus) app.use("/api/events", eventsRouter(deps.bus));
   return app;
 }
