@@ -1,6 +1,8 @@
 import * as THREE from "three";
 
-const OFFSET = new THREE.Vector3(0, 3, 16); // fixed side-on offset from the look-at point
+const OFFSET = new THREE.Vector3(0, 2, 28); // fixed side-on offset, slight downward tilt; wide enough for a 20-wide floor at 4:3 plus floors above/below
+const LIFT = 0.75; // player eye (y+1.5) -> floor mid-height (y+2.25), so the whole floor is centred
+const PAN = 0.1; // small x follow: the floor must stay edge to edge in frame
 const GLIDE_S = 0.8;
 
 export class FollowCamera {
@@ -11,14 +13,14 @@ export class FollowCamera {
 
   follow(target: THREE.Vector3, dt: number): void {
     const k = 1 - Math.exp(-6 * dt); // frame-rate independent damping
-    this.lookAt.x += (target.x - this.lookAt.x) * k;
+    this.lookAt.x += (target.x * PAN - this.lookAt.x) * k;
     if (this.glide) {
       const g = this.glide;
       g.t = Math.min(1, g.t + dt / GLIDE_S);
-      this.lookAt.y = g.from + (g.to - g.from) * g.t * g.t * (3 - 2 * g.t); // smoothstep
+      this.lookAt.y = g.from + (g.to + LIFT - g.from) * g.t * g.t * (3 - 2 * g.t); // smoothstep
       if (g.t >= 1) this.glide = null;
     } else {
-      this.lookAt.y += (target.y - this.lookAt.y) * k;
+      this.lookAt.y += (target.y + LIFT - this.lookAt.y) * k;
     }
     this.camera.position.copy(this.lookAt).add(OFFSET); // z stays fixed: side angle
     this.camera.lookAt(this.lookAt);
