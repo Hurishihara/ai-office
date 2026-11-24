@@ -1,16 +1,11 @@
 import path from "node:path";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { loadConfig } from "../src/config.js";
 import { ChromaVectorIndex } from "../src/notes/vectorIndex.js";
 import { NoteService } from "../src/notes/noteService.js";
+import { makeEmbeddings } from "../src/models/openrouter.js";
 
 const config = loadConfig();
-// Task 4 replaces this inline construction with makeEmbeddings(config).
-const embeddings = new OpenAIEmbeddings({
-  model: config.embeddingModel,
-  apiKey: config.openrouterApiKey,
-  configuration: { baseURL: "https://openrouter.ai/api/v1" },
-});
+const embeddings = makeEmbeddings(config.embeddingModel, config.openrouterApiKey);
 const index = new ChromaVectorIndex({ chromaUrl: config.chromaUrl, embeddingModel: config.embeddingModel, embeddings });
 const notes = new NoteService({ notesDir: path.join(config.dataDir, "notes"), index });
 
