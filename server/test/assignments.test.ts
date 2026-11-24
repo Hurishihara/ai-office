@@ -87,7 +87,9 @@ describe("assignments", () => {
     const t = await setup();
     const id = await t.start();
     await t.waitForStatus(id, "awaiting_user");
-    expect((await t.decide(id, { action: "approve" })).status).toBe(200);
+    const res = await t.decide(id, { action: "approve" });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: "approved", finalPost: "draft" });
     await t.waitForStatus(id, "approved");
     expect((await t.service.get(id))!.finalPost).toBe("draft");
   });
@@ -100,6 +102,9 @@ describe("assignments", () => {
     await t.waitForStatus(id, "awaiting_user");
     const [a, b] = await Promise.all([t.decide(id, { action: "revise", feedback: "x" }), t.decide(id, { action: "revise", feedback: "y" })]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
+    expect((a.status === 200 ? a : b).body).toMatchObject({ status: "writing", round: 2 });
+    await waitFor(() => t.writer.mock.calls.length === 2); // the revision is now in the write node
+    expect((await t.service.get(id))!).toMatchObject({ status: "writing", round: 2 });
     g.open();
     await t.waitForStatus(id, "awaiting_user");
     expect(t.writer).toHaveBeenCalledTimes(2); // first draft + exactly one revision

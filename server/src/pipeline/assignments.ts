@@ -67,10 +67,13 @@ export class AssignmentService {
     const v = (await this.graph.getState(cfg(id))).values as Partial<PipelineState>;
     const reviewed = v.round ?? 1;
     // The round bumps when the write node starts, so a revision in progress still shows the previous round in state.
-    const round = v.status === "writing" && v.userDecision?.action === "revise" ? reviewed + 1 : reviewed;
+    // Right after a revise claim the checkpoint is still awaiting_user until human_review re-runs.
+    const revising = (e.status === "writing" && v.status === "awaiting_user") || (v.status === "writing" && v.userDecision?.action === "revise");
+    const round = revising ? reviewed + 1 : reviewed;
     return {
       ...summary(e), round, draft: v.draft ?? null, retrievedNotes: v.retrievedNotes ?? [], usedNoteIds: v.usedNoteIds ?? [],
-      qaReview: v.qaReview ?? null, finalPost: v.finalPost ?? null, error: e.error,
+      // human_review sets finalPost = draft; derive it so an approve claim never shows approved without its post.
+      qaReview: v.qaReview ?? null, finalPost: v.finalPost ?? (e.status === "approved" ? v.draft ?? null : null), error: e.error,
       canRevise: e.status === "awaiting_user" && reviewed < MAX_ROUNDS,
     };
   }
