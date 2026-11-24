@@ -12,7 +12,8 @@ export const initialState = (): OfficeState => ({ agents: { writer: "idle", qa: 
 // Agent states re-derived from persisted assignments (in-memory states are stale after a backend restart).
 // An `error` assignment doesn't say which agent failed, so it leaves both idle.
 export function agentsFromAssignments(assignments: AssignmentSummary[]): Record<AgentId, AgentState> {
-  return { writer: "idle", qa: assignments.some((a) => a.status === "awaiting_user") ? "waiting" : "idle" };
+  const any = (status: AssignmentSummary["status"]) => assignments.some((a) => a.status === status);
+  return { writer: any("writing") ? "thinking" : "idle", qa: any("reviewing") ? "thinking" : any("awaiting_user") ? "waiting" : "idle" };
 }
 
 export function applyEvent(s: OfficeState, e: ServerEvent): OfficeState {

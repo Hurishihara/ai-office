@@ -1,10 +1,9 @@
-import type { AssignmentView, UserDecision } from "@ai-office/shared";
+import { MAX_ROUNDS, type AssignmentView, type UserDecision } from "@ai-office/shared";
 import { api, errorText } from "../api";
 import { Panel, withBusy } from "./panel";
 import { el, renderDraft } from "./sources";
 import type { Store } from "./writerPanel";
 
-const MAX_ROUND = 3;
 const FEEDBACK_MAX = 2000;
 
 export function openQaPanel(store: Store): void {
@@ -28,9 +27,12 @@ export function openQaPanel(store: Store): void {
     return box;
   };
 
+  // created once so typed feedback survives re-renders
+  const fb = Object.assign(document.createElement("textarea"), { rows: 3, maxLength: FEEDBACK_MAX, placeholder: "Feedback for the writer (needed to revise)" });
   const render = (v: AssignmentView) => {
     seenStatus = v.status;
-    const parts: HTMLElement[] = [el("div", `Round ${v.round} of ${MAX_ROUND} — ${v.status}`)];
+    if (v.status !== "awaiting_user") fb.value = ""; // the revision went out or the review is over
+    const parts: HTMLElement[] = [el("div", `Round ${v.round} of ${MAX_ROUNDS} — ${v.status}`)];
     if (v.status === "error") {
       const retry = el("button", "Retry");
       retry.onclick = () => withBusy(retry, () => act(() => api.retry(v.id)));
@@ -52,7 +54,6 @@ export function openQaPanel(store: Store): void {
       parts.push(el("h3", "Approved post"), pre, copy);
     }
     if (v.status === "awaiting_user") {
-      const fb = Object.assign(document.createElement("textarea"), { rows: 3, maxLength: FEEDBACK_MAX, placeholder: "Feedback for the writer (needed to revise)" });
       const approve = el("button", "Approve");
       const discard = el("button", "Discard");
       approve.onclick = () => withBusy(approve, () => act(() => api.decide(v.id, { action: "approve" })));
@@ -72,13 +73,19 @@ export function openQaPanel(store: Store): void {
     }
     view.replaceChildren(...parts);
   };
+  let seq = 0; // only the latest request may render (responses can arrive out of order)
+  const show = async (p: Promise<AssignmentView>) => {
+    const n = ++seq;
+    const v = await p;
+    if (n === seq) render(v);
+  };
   const load = async () => {
-    try { render(await api.getAssignment(target.id)); } catch (e) { msg.textContent = errorText(e); }
+    try { await show(api.getAssignment(target.id)); } catch (e) { msg.textContent = errorText(e); }
   };
   // on 409/400 show the message, then reload so the panel matches the server
   const act = async (fn: () => Promise<AssignmentView>) => {
     msg.textContent = "";
-    try { render(await fn()); } catch (e) { msg.textContent = errorText(e); await load(); }
+    try { await show(fn()); } catch (e) { msg.textContent = errorText(e); await load(); }
   };
   panel.open();
   void load();

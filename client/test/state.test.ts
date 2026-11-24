@@ -42,8 +42,12 @@ describe("agentsFromAssignments", () => {
   it("awaiting_user puts QA in waiting", () => {
     expect(agentsFromAssignments([a("1", "approved"), a("2", "awaiting_user")])).toEqual({ writer: "idle", qa: "waiting" });
   });
+  it("writing puts the writer thinking, reviewing puts QA thinking", () => {
+    expect(agentsFromAssignments([a("1", "writing")])).toEqual({ writer: "thinking", qa: "idle" });
+    expect(agentsFromAssignments([a("1", "reviewing"), a("2", "awaiting_user")])).toEqual({ writer: "idle", qa: "thinking" });
+  });
   it("everything else (incl. error, which names no agent) stays idle", () => {
-    expect(agentsFromAssignments([a("1", "writing"), a("2", "error")])).toEqual({ writer: "idle", qa: "idle" });
+    expect(agentsFromAssignments([a("1", "approved"), a("2", "error"), a("3", "discarded")])).toEqual({ writer: "idle", qa: "idle" });
     expect(agentsFromAssignments([])).toEqual({ writer: "idle", qa: "idle" });
   });
 });

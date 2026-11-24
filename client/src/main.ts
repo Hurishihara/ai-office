@@ -111,7 +111,6 @@ const seed = () =>
 seed();
 subscribeEvents(
   (e) => {
-    console.log("event", e);
     forwardSearch(e); // not stored: only the open writer panel shows it
     store.set(applyEvent(store.get(), e));
   },

@@ -41,13 +41,17 @@ export const api = {
   retry: (id: string) => call<AssignmentView>("POST", `/assignments/${encodeURIComponent(id)}/retry`),
 };
 
+// onReconnect runs on every open (seeding twice at startup is harmless).
 export function subscribeEvents(onEvent: (e: ServerEvent) => void, onReconnect: () => void): () => void {
-  const es = new EventSource("/api/events");
-  let opened = false;
-  es.addEventListener("open", () => {
-    if (opened) onReconnect();
-    opened = true;
-  });
-  es.addEventListener("message", (m) => onEvent(JSON.parse((m as MessageEvent).data) as ServerEvent));
-  return () => es.close();
+  let es: EventSource;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const connect = () => {
+    const s = (es = new EventSource("/api/events"));
+    s.addEventListener("open", () => onReconnect());
+    s.addEventListener("message", (m) => onEvent(JSON.parse((m as MessageEvent).data) as ServerEvent));
+    // A non-200 answer (backend down behind the Vite proxy) closes the stream for good; the browser won't retry it.
+    s.addEventListener("error", () => { if (s.readyState === EventSource.CLOSED) timer = setTimeout(connect, 2000); });
+  };
+  connect();
+  return () => { clearTimeout(timer); es.close(); };
 }

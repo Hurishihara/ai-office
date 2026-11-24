@@ -30,14 +30,25 @@ export function openWriterPanel(store: Store): void {
   const past = document.createElement("div");
   panel.body.append(platform, ask, start, msg, feed, result, past);
 
-  const load = async (id: string, keepFeed = false) => {
+  let loadSeq = 0; // only the latest load() may render (responses can arrive out of order)
+  const load = async (id: string, keepFeed = false): Promise<void> => {
+    const seq = ++loadSeq;
     activeId = id;
     if (!keepFeed) { feed.replaceChildren(); seenStatus = store.get().assignments.find((x) => x.id === id)?.status; }
     try {
       const v: AssignmentView = await api.getAssignment(id);
-      if (activeId !== id) return;
-      result.replaceChildren(el("div", `${PLATFORM_LABELS[v.platform]} — ${v.status}${v.error ? `: ${v.error}` : ""}`), renderDraft(v));
-    } catch (e) { msg.textContent = errorText(e); }
+      if (seq !== loadSeq) return;
+      const parts: HTMLElement[] = [el("div", `${PLATFORM_LABELS[v.platform]} — ${v.status}${v.error ? `: ${v.error}` : ""}`)];
+      if (v.status === "error") {
+        const retry = el("button", "Retry");
+        retry.onclick = () => withBusy(retry, async () => {
+          msg.textContent = "";
+          try { await api.retry(v.id); await load(v.id, true); } catch (e) { msg.textContent = errorText(e); }
+        });
+        parts.push(retry);
+      }
+      result.replaceChildren(...parts, renderDraft(v));
+    } catch (e) { if (seq === loadSeq) msg.textContent = errorText(e); }
   };
   const renderPast = () => past.replaceChildren(...store.get().assignments.map((a) => {
     const b = el("button", `${PLATFORM_LABELS[a.platform]} · ${a.status} · ${a.ask.slice(0, 40)}`);
@@ -60,6 +71,7 @@ export function openWriterPanel(store: Store): void {
       ask.value = "";
       feed.replaceChildren();
       activeId = s.id;
+      loadSeq++; // drop any load still in flight for the previous assignment
       seenStatus = s.status;
       result.replaceChildren(el("div", "Writer is working…"));
     } catch (e) { msg.textContent = errorText(e); }
