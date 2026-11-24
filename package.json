@@ -4,12 +4,14 @@
   "type": "module",
   "workspaces": [
     "shared",
-    "server"
+    "server",
+    "client"
   ],
   "scripts": {
     "dev:server": "npm run dev -w @ai-office/server",
+    "dev:client": "npm run dev -w @ai-office/client",
     "reindex": "tsx --env-file-if-exists=.env server/scripts/reindex.ts",
-    "test": "npm test -w @ai-office/server"
+    "test": "npm test -w @ai-office/server && npm test -w @ai-office/client"
   },
   "allowScripts": {
     "better-sqlite3@12.11.1": true

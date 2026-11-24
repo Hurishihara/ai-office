@@ -1,0 +1,33 @@
+import { describe, expect, it } from "vitest";
+import type { AssignmentStatus, AssignmentSummary } from "@ai-office/shared";
+import { applyEvent, initialState } from "../src/state";
+
+const a = (id: string, status: AssignmentStatus): AssignmentSummary => ({ id, platform: "x", ask: "q", status, createdAt: "2026-01-01" });
+
+describe("applyEvent", () => {
+  it("agent events set that agent's state only", () => {
+    const s = applyEvent(initialState(), { type: "agent", agent: "qa", state: "waiting" });
+    expect(s.agents).toEqual({ writer: "idle", qa: "waiting" });
+  });
+  it("assignment events upsert by id", () => {
+    let s = applyEvent(initialState(), { type: "assignment", assignment: a("1", "writing") });
+    s = applyEvent(s, { type: "assignment", assignment: a("1", "awaiting_user") });
+    expect(s.assignments).toHaveLength(1);
+    expect(s.assignments[0].status).toBe("awaiting_user");
+  });
+  it("new assignments go first", () => {
+    let s = applyEvent(initialState(), { type: "assignment", assignment: a("1", "writing") });
+    s = applyEvent(s, { type: "assignment", assignment: a("2", "writing") });
+    expect(s.assignments.map((x) => x.id)).toEqual(["2", "1"]);
+  });
+  it("handoff records the assignment id", () => {
+    expect(applyEvent(initialState(), { type: "handoff", assignmentId: "1" }).lastHandoff).toBe("1");
+  });
+  it("applyEvent does not mutate its input", () => {
+    const s = initialState();
+    const snap = structuredClone(s);
+    applyEvent(s, { type: "agent", agent: "writer", state: "thinking" });
+    applyEvent(s, { type: "assignment", assignment: a("1", "writing") });
+    expect(s).toEqual(snap);
+  });
+});
