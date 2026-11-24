@@ -17,6 +17,7 @@ const walls = (): Box2D[] => [
   { minX: -hw - T, maxX: hw + T, minZ: -hd - T, maxZ: -hd }, // back
   { minX: -hw - T, maxX: -hw, minZ: -hd, maxZ: hd }, // left
   { minX: hw, maxX: hw + T, minZ: -hd, maxZ: hd }, // right
+  { minX: -hw - T, maxX: hw + T, minZ: hd, maxZ: hd + T }, // front: open to the camera, but the player can't walk off the slab
 ];
 const elevator = (): Interactable => ({ id: "elevator", x: SHAFT_X, z: 0, radius: 1.5 });
 

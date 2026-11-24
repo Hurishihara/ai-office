@@ -1,9 +1,12 @@
 import "./style.css";
 import * as THREE from "three";
-import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
+import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { api, subscribeEvents } from "./api";
 import { FollowCamera } from "./scene/camera";
 import { FLOORS } from "./scene/floors";
+import { Keys } from "./scene/input";
+import { nearestInteractable } from "./scene/interact";
+import { Player } from "./scene/player";
 import { buildTower } from "./scene/tower";
 import { applyEvent, createStore, initialState } from "./state";
 
@@ -29,7 +32,21 @@ const tower = buildTower(scene, FLOORS);
 const followCam = new FollowCamera(camera);
 const focus = 0;
 tower.setFocus(focus);
-const player = new THREE.Vector3(FLOORS[focus].spawn.x, tower.floorY(focus) + 1.5, 0);
+const player = new Player(tower, scene);
+player.teleport(focus, FLOORS[focus].spawn);
+const keys = new Keys(window); // Task 4's panel/elevator call keys.setEnabled(false/true)
+
+const prompt = document.createElement("div");
+prompt.textContent = "E";
+prompt.style.cssText = "display:none;position:absolute;pointer-events:none;padding:2px 8px;border-radius:4px;background:#fff;color:#111;font:bold 14px system-ui";
+const promptObj = new CSS2DObject(prompt);
+promptObj.position.y = 2.2;
+player.mesh.add(promptObj);
+
+const openPanelFor = (id: string) => console.log("openPanelFor", id); // stub until Task 5
+const inRange = () => nearestInteractable(player.pos, FLOORS[player.floor].interactables);
+keys.onInteract(() => { const it = inRange(); if (it) openPanelFor(it.id); });
+const eye = new THREE.Vector3();
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
@@ -43,7 +60,10 @@ resize();
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
-  followCam.follow(player, Math.min(clock.getDelta(), 0.1));
+  const dt = Math.min(clock.getDelta(), 0.1);
+  player.update(dt, keys.direction(), FLOORS[player.floor]);
+  prompt.style.display = inRange() ? "block" : "none";
+  followCam.follow(eye.set(player.pos.x, tower.floorY(player.floor) + 1.5, 0), dt);
   renderer.render(scene, camera);
   labels.render(scene, camera);
 });
