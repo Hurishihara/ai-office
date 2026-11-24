@@ -23,6 +23,12 @@ describe("applyEvent", () => {
   it("handoff records the assignment id", () => {
     expect(applyEvent(initialState(), { type: "handoff", assignmentId: "1" }).lastHandoff).toBe("1");
   });
+  it("two handoffs with the same id each bump handoffSeq (revise rounds)", () => {
+    expect(initialState().handoffSeq).toBe(0);
+    const s1 = applyEvent(initialState(), { type: "handoff", assignmentId: "1" });
+    const s2 = applyEvent(s1, { type: "handoff", assignmentId: "1" });
+    expect([s1.handoffSeq, s2.handoffSeq]).toEqual([1, 2]);
+  });
   it("applyEvent does not mutate its input", () => {
     const s = initialState();
     const snap = structuredClone(s);

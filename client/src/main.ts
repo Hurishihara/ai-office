@@ -89,12 +89,12 @@ renderer.setAnimationLoop(() => {
 });
 
 const figures = new AgentFigures(scene, tower);
-let shownHandoff = store.get().lastHandoff;
+let shownHandoff = store.get().handoffSeq;
 store.subscribe((s) => {
   (Object.keys(s.agents) as AgentId[]).forEach((id) => figures.setState(id, s.agents[id]));
-  if (s.lastHandoff !== shownHandoff) {
-    shownHandoff = s.lastHandoff;
-    if (s.lastHandoff) playHandoff(scene, tower.anchor("writer", 1), tower.anchor("qa", 2));
+  if (s.handoffSeq !== shownHandoff) { // seed/reconnect spreads the old state, so it never replays
+    shownHandoff = s.handoffSeq;
+    playHandoff(scene, tower.anchor("writer", 1), tower.anchor("qa", 2));
   }
 });
 

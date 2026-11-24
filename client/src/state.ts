@@ -4,9 +4,10 @@ export interface OfficeState {
   agents: Record<AgentId, AgentState>;
   assignments: AssignmentSummary[]; // newest first
   lastHandoff: string | null;
+  handoffSeq: number; // bumps on every handoff event, even for the same assignment id (revise rounds)
 }
 
-export const initialState = (): OfficeState => ({ agents: { writer: "idle", qa: "idle" }, assignments: [], lastHandoff: null });
+export const initialState = (): OfficeState => ({ agents: { writer: "idle", qa: "idle" }, assignments: [], lastHandoff: null, handoffSeq: 0 });
 
 // Agent states re-derived from persisted assignments (in-memory states are stale after a backend restart).
 // An `error` assignment doesn't say which agent failed, so it leaves both idle.
@@ -17,7 +18,7 @@ export function agentsFromAssignments(assignments: AssignmentSummary[]): Record<
 export function applyEvent(s: OfficeState, e: ServerEvent): OfficeState {
   switch (e.type) {
     case "agent": return { ...s, agents: { ...s.agents, [e.agent]: e.state } };
-    case "handoff": return { ...s, lastHandoff: e.assignmentId };
+    case "handoff": return { ...s, lastHandoff: e.assignmentId, handoffSeq: s.handoffSeq + 1 };
     case "assignment": {
       const i = s.assignments.findIndex((a) => a.id === e.assignment.id);
       const assignments = i >= 0
