@@ -68,11 +68,11 @@ export class NoteService {
 
   async remove(id: string): Promise<boolean> {
     if (!UUID_RE.test(id)) return false;
+    await this.index.deleteByNote(id); // chunks first: a failure leaves the file, so a retry works; also cleans orphans
     try { await fs.unlink(path.join(this.notesDir, `${id}.md`)); } catch (e) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
       throw e;
     }
-    await this.index.deleteByNote(id);
     return true;
   }
 

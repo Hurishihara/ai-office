@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import { UUID_RE } from "@ai-office/shared";
 import type { NoteService } from "../notes/noteService.js";
 import { validateNoteInput } from "../notes/validate.js";
@@ -22,6 +22,14 @@ export function notesRouter(notes: NoteService, chromaUrl: string): Router {
   r.delete("/:id", async (req, res, next) => {
     if (!UUID_RE.test(req.params.id)) return void res.status(400).json({ error: "Invalid note id" });
     try { res.sendStatus((await notes.remove(req.params.id)) ? 204 : 404); } catch (e) { next(e); }
+  });
+  // Connection errors thrown mid-request (Chroma dropped after the heartbeat) get the same 503 as a failed heartbeat.
+  r.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+    const e = err as { code?: string; name?: string; message?: string; cause?: { code?: string } };
+    const conn = e?.code === "ECONNREFUSED" || e?.cause?.code === "ECONNREFUSED" ||
+      /fetch failed|ChromaConnectionError|ECONNREFUSED/.test(`${e?.name} ${e?.message}`);
+    if (!conn) return next(err);
+    res.status(503).json({ error: `Chroma is not reachable at ${chromaUrl}. Start it with: docker compose up -d` });
   });
   return r;
 }

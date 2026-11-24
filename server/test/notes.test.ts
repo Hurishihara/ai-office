@@ -94,6 +94,21 @@ describe("notes", () => {
     }
     expect(existsSync(notesDir) ? await fs.readdir(notesDir) : []).toEqual([]);
   });
+  it("returns 503 when the index throws a connection error mid-request", async () => {
+    fake.addChunks = async () => { throw new TypeError("fetch failed"); };
+    const res = await post({ title: "t", text: "hi", source: "typed" });
+    expect(res.status).toBe(503);
+    expect(res.body.error).toBe("Chroma is not reachable at http://localhost:8000. Start it with: docker compose up -d");
+  });
+  it("DELETE keeps the file when the index delete fails, and a retry succeeds", async () => {
+    const { body } = await post({ title: "t", text: "hello", source: "typed" });
+    const orig = fake.deleteByNote.bind(fake);
+    fake.deleteByNote = async () => { fake.deleteByNote = orig; throw new Error("boom"); };
+    expect((await request(app).delete(`/api/notes/${body.id}`)).status).toBe(500);
+    expect(existsSync(path.join(notesDir, `${body.id}.md`))).toBe(true);
+    expect((await request(app).delete(`/api/notes/${body.id}`)).status).toBe(204);
+    expect(fake.chunks).toEqual([]);
+  });
   it("reindex re-adds every note file after reset", async () => {
     await post({ title: "a", text: "alpha", source: "typed" });
     await post({ title: "b", text: "beta", source: "typed" });
