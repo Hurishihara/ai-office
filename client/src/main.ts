@@ -13,7 +13,10 @@ import { openNotesPanel } from "./ui/notesPanel";
 import { bindPanelKeys } from "./ui/panel";
 import { openPreferencesPanel } from "./ui/preferencesPanel";
 import { openReceptionPanel } from "./ui/receptionPanel";
-import { applyEvent, createStore, initialState } from "./state";
+import { AgentFigures } from "./scene/agents";
+import { playHandoff } from "./scene/handoff";
+import { agentsFromAssignments, applyEvent, createStore, initialState } from "./state";
+import type { AgentId } from "@ai-office/shared";
 
 const store = createStore(initialState());
 
@@ -85,9 +88,20 @@ renderer.setAnimationLoop(() => {
   labels.render(scene, camera);
 });
 
+const figures = new AgentFigures(scene, tower);
+let shownHandoff = store.get().lastHandoff;
+store.subscribe((s) => {
+  (Object.keys(s.agents) as AgentId[]).forEach((id) => figures.setState(id, s.agents[id]));
+  if (s.lastHandoff !== shownHandoff) {
+    shownHandoff = s.lastHandoff;
+    if (s.lastHandoff) playHandoff(scene, tower.anchor("writer", 1), tower.anchor("qa", 2));
+  }
+});
+
+// Agent states are in-memory on the server; after a restart they're stale, so re-derive from assignments.
 const seed = () =>
   api.listAssignments()
-    .then((assignments) => store.set({ ...store.get(), assignments }))
+    .then((assignments) => store.set({ ...store.get(), assignments, agents: agentsFromAssignments(assignments) }))
     .catch((err) => console.error("seed failed", err));
 
 seed();

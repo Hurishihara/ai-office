@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AssignmentStatus, AssignmentSummary } from "@ai-office/shared";
-import { applyEvent, initialState } from "../src/state";
+import { agentsFromAssignments, applyEvent, initialState } from "../src/state";
 
 const a = (id: string, status: AssignmentStatus): AssignmentSummary => ({ id, platform: "x", ask: "q", status, createdAt: "2026-01-01" });
 
@@ -29,5 +29,15 @@ describe("applyEvent", () => {
     applyEvent(s, { type: "agent", agent: "writer", state: "thinking" });
     applyEvent(s, { type: "assignment", assignment: a("1", "writing") });
     expect(s).toEqual(snap);
+  });
+});
+
+describe("agentsFromAssignments", () => {
+  it("awaiting_user puts QA in waiting", () => {
+    expect(agentsFromAssignments([a("1", "approved"), a("2", "awaiting_user")])).toEqual({ writer: "idle", qa: "waiting" });
+  });
+  it("everything else (incl. error, which names no agent) stays idle", () => {
+    expect(agentsFromAssignments([a("1", "writing"), a("2", "error")])).toEqual({ writer: "idle", qa: "idle" });
+    expect(agentsFromAssignments([])).toEqual({ writer: "idle", qa: "idle" });
   });
 });
