@@ -3,11 +3,13 @@ import * as THREE from "three";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { api, subscribeEvents } from "./api";
 import { FollowCamera } from "./scene/camera";
-import { FLOORS } from "./scene/floors";
+import { FLOORS, SHAFT_X } from "./scene/floors";
 import { Keys } from "./scene/input";
 import { nearestInteractable } from "./scene/interact";
 import { Player } from "./scene/player";
 import { buildTower } from "./scene/tower";
+import { openElevator } from "./ui/elevatorPanel";
+import { bindPanelKeys } from "./ui/panel";
 import { applyEvent, createStore, initialState } from "./state";
 
 const store = createStore(initialState());
@@ -34,7 +36,8 @@ const focus = 0;
 tower.setFocus(focus);
 const player = new Player(tower, scene);
 player.teleport(focus, FLOORS[focus].spawn);
-const keys = new Keys(window); // Task 4's panel/elevator call keys.setEnabled(false/true)
+const keys = new Keys(window);
+bindPanelKeys(keys);
 
 const prompt = document.createElement("div");
 prompt.textContent = "E";
@@ -43,7 +46,15 @@ const promptObj = new CSS2DObject(prompt);
 promptObj.position.y = 2.2;
 player.mesh.add(promptObj);
 
-const openPanelFor = (id: string) => console.log("openPanelFor", id); // stub until Task 5
+const pickFloor = (i: number) => {
+  player.teleport(i, { x: SHAFT_X - 2, z: 1.5 }); // just outside the shaft
+  tower.setFocus(i);
+  followCam.glideToFloor(tower.floorY(i) + 1.5); // eye height, same as the follow target
+};
+const openPanelFor = (id: string) => {
+  if (id === "elevator") openElevator(player.floor, FLOORS, pickFloor);
+  else console.log("openPanelFor", id); // stub until Tasks 5/7
+};
 const inRange = () => nearestInteractable(player.pos, FLOORS[player.floor].interactables);
 keys.onInteract(() => { const it = inRange(); if (it) openPanelFor(it.id); });
 const eye = new THREE.Vector3();
