@@ -21,6 +21,9 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return data as T;
 }
 
+export const errorText = (e: unknown): string =>
+  e instanceof ApiError ? e.message : e instanceof TypeError ? "Can't reach the server. Is the backend running?" : String(e);
+
 export const api = {
   getPreferences: () => call<Preferences>("GET", "/preferences"),
   savePreferences: (p: Preferences) => call<Preferences>("PUT", "/preferences", p),

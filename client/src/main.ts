@@ -9,7 +9,10 @@ import { nearestInteractable } from "./scene/interact";
 import { Player } from "./scene/player";
 import { buildTower } from "./scene/tower";
 import { openElevator } from "./ui/elevatorPanel";
+import { openNotesPanel } from "./ui/notesPanel";
 import { bindPanelKeys } from "./ui/panel";
+import { openPreferencesPanel } from "./ui/preferencesPanel";
+import { openReceptionPanel } from "./ui/receptionPanel";
 import { applyEvent, createStore, initialState } from "./state";
 
 const store = createStore(initialState());
@@ -53,6 +56,9 @@ const pickFloor = (i: number) => {
 };
 const openPanelFor = (id: string) => {
   if (id === "elevator") openElevator(player.floor, FLOORS, pickFloor);
+  else if (id === "notes") openNotesPanel();
+  else if (id === "preferences") openPreferencesPanel();
+  else if (id === "reception") openReceptionPanel();
   else console.log("openPanelFor", id); // stub until Tasks 5/7
 };
 const inRange = () => nearestInteractable(player.pos, FLOORS[player.floor].interactables);
