@@ -5,6 +5,7 @@
   "workspaces": ["shared", "server"],
   "scripts": {
     "dev:server": "npm run dev -w @ai-office/server",
-    "test": "npm test -w @ai-office/server"
+    "reindex": "tsx --env-file-if-exists=.env server/scripts/reindex.ts",
+    "test":"npm test -w @ai-office/server"
   }
 }
