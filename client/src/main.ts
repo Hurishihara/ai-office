@@ -12,7 +12,9 @@ import { openElevator } from "./ui/elevatorPanel";
 import { openNotesPanel } from "./ui/notesPanel";
 import { bindPanelKeys } from "./ui/panel";
 import { openPreferencesPanel } from "./ui/preferencesPanel";
+import { openQaPanel } from "./ui/qaPanel";
 import { openReceptionPanel } from "./ui/receptionPanel";
+import { forwardSearch, openWriterPanel } from "./ui/writerPanel";
 import { AgentFigures } from "./scene/agents";
 import { playHandoff } from "./scene/handoff";
 import { agentsFromAssignments, applyEvent, createStore, initialState } from "./state";
@@ -62,7 +64,9 @@ const openPanelFor = (id: string) => {
   else if (id === "notes") openNotesPanel();
   else if (id === "preferences") openPreferencesPanel();
   else if (id === "reception") openReceptionPanel();
-  else console.log("openPanelFor", id); // stub until Tasks 5/7
+  else if (id === "writer") openWriterPanel(store);
+  else if (id === "qa") openQaPanel(store);
+  else console.log("openPanelFor", id); // unknown id
 };
 const inRange = () => nearestInteractable(player.pos, FLOORS[player.floor].interactables);
 keys.onInteract(() => { const it = inRange(); if (it) openPanelFor(it.id); });
@@ -108,6 +112,7 @@ seed();
 subscribeEvents(
   (e) => {
     console.log("event", e);
+    forwardSearch(e); // not stored: only the open writer panel shows it
     store.set(applyEvent(store.get(), e));
   },
   () => { console.log("reconnected, re-seeding"); seed(); },
