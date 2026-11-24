@@ -12,7 +12,10 @@ export class Keys {
   constructor(target: Window) {
     target.addEventListener("keydown", (e: KeyboardEvent) => {
       if (!this.on || isTypingTarget(document.activeElement)) return;
-      if (e.code === "KeyE") { if (!e.repeat) this.interactFn(); return; }
+      if (e.code === "KeyE") {
+        if (!e.repeat) { e.preventDefault(); this.interactFn(); } // else the 'e' lands in the panel input focused by interactFn
+        return;
+      }
       this.held.add(e.code);
     });
     // keyup always clears, even while typing/disabled, so no key can stay stuck

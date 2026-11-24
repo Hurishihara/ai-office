@@ -36,8 +36,18 @@ describe("Keys", () => {
   it("fires interact when not typing", () => {
     const { w, k } = make(); setActive(null);
     let n = 0; k.onInteract(() => n++);
-    w.fire("keydown", { code: "KeyE" });
+    w.fire("keydown", { code: "KeyE", preventDefault() {} });
     expect(n).toBe(1);
+  });
+  it("preventDefaults E only when it interacts, so the opening 'e' is not typed into a panel", () => {
+    const { w, k } = make(); k.onInteract(() => {});
+    const ev = () => { const e = { code: "KeyE", defaultPrevented: false, preventDefault() { e.defaultPrevented = true; } }; return e; };
+    setActive(null);
+    const a = ev(); w.fire("keydown", a);
+    expect(a.defaultPrevented).toBe(true);
+    setActive(el("TEXTAREA"));
+    const b = ev(); w.fire("keydown", b);
+    expect(b.defaultPrevented).toBe(false);
   });
   it("clears held keys on setEnabled(false), blur, and ignores keys while disabled", () => {
     const { w, k } = make(); setActive(null);
