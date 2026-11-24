@@ -1,0 +1,10 @@
+{
+  "name": "ai-office",
+  "private": true,
+  "type": "module",
+  "workspaces": ["shared", "server"],
+  "scripts": {
+    "dev:server": "npm run dev -w @ai-office/server",
+    "test": "npm test -w @ai-office/server"
+  }
+}
