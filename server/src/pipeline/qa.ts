@@ -19,6 +19,7 @@ export function makeQa(opts: { model: () => Promise<BaseChatModel> }): QaFn {
   return async ({ platform, preferences, draft, usedNotes }) => {
     const agent = createAgent({ model: await opts.model(), tools: [], systemPrompt: buildQaPrompt({ platform, preferences, draft, usedNotes }), responseFormat: qaOutput });
     const result = await invokeWithTimeout(agent, "Review the draft.");
+    if (!result.structuredResponse) throw new Error("QA returned no structured response");
     return applyLengthCheck(result.structuredResponse as QaReview, platform, draft);
   };
 }

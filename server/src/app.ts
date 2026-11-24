@@ -24,6 +24,12 @@ export interface AppDeps { // grows one field per task; routers mount only when 
 
 export function createApp(deps: Partial<AppDeps> = {}): express.Express {
   const app = express();
+  // DNS-rebinding guard: only the local hostnames may talk to this API.
+  app.use((req, res, next) => {
+    const host = (req.headers.host ?? "").replace(/:\d+$/, "");
+    if (host === "localhost" || host === "127.0.0.1") return next();
+    res.status(403).json({ error: "Forbidden host" });
+  });
   app.use(express.json({ limit: "2mb" }));
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });

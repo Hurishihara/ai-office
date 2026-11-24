@@ -1,10 +1,8 @@
 import { Annotation, StateGraph, START, END, interrupt } from "@langchain/langgraph";
 import type { BaseCheckpointSaver } from "@langchain/langgraph";
-import type { AssignmentStatus, Platform, Preferences, QaReview, RetrievedChunk, ServerEvent, UserDecision } from "@ai-office/shared";
+import { MAX_ROUNDS, type AssignmentStatus, type Platform, type Preferences, type QaReview, type RetrievedChunk, type ServerEvent, type UserDecision } from "@ai-office/shared";
 import type { WriterFn } from "./writer.js";
 import type { QaFn } from "./qa.js";
-
-export const MAX_ROUNDS = 3;
 
 // Every field uses the default "last value wins" channel (no reducers).
 const State = Annotation.Root({
@@ -38,9 +36,9 @@ export function buildGraph(deps: { writer: WriterFn; qa: QaFn; checkpointer: Bas
     const id = s.assignmentId;
     emit({ type: "agent", agent: "writer", state: "thinking", assignmentId: id });
     // The round bumps here, not in human_review: nextAfterHuman must see the round that was just reviewed.
-    const revising = s.userDecision?.action === "revise" && !!s.draft && !!s.qaReview;
+    const revising = s.userDecision?.action === "revise";
     const round = revising ? s.round + 1 : s.round;
-    const revision = revising ? { previousDraft: s.draft!, qaReview: s.qaReview!, feedback: s.userDecision?.feedback } : undefined;
+    const revision = revising && s.draft && s.qaReview ? { previousDraft: s.draft, qaReview: s.qaReview, feedback: s.userDecision?.feedback } : undefined;
     const r = await writer({
       platform: s.platform, ask: s.ask, preferences: s.preferences, revision,
       onSearch: (query, hits) => emit({ type: "search", assignmentId: id, query, hits }),

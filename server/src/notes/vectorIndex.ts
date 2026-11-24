@@ -30,7 +30,8 @@ export class ChromaVectorIndex implements VectorIndex {
   }
 
   private collection() {
-    return this.client.getOrCreateCollection({ name: this.name, configuration: { hnsw: { space: "cosine" } } });
+    // embeddingFunction: null — we embed ourselves; otherwise chromadb tries @chroma-core/default-embed and warns
+    return this.client.getOrCreateCollection({ name: this.name, configuration: { hnsw: { space: "cosine" } }, embeddingFunction: null });
   }
 
   async addChunks(chunks: { id: string; text: string; metadata: ChunkMeta }[]): Promise<void> {

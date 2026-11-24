@@ -19,4 +19,6 @@ export function countChars(text: string): number {
   return [...text].length;
 }
 
+export const MAX_ROUNDS = 3; // writer rounds per assignment (first draft + 2 revisions)
+
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

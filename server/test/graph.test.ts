@@ -52,6 +52,13 @@ describe("pipeline graph", () => {
     const out: any = await resume(graph, { action: "revise" });
     expect(out.__interrupt__[0].value).toMatchObject({ round: 3, canRevise: false });
   });
+  it("revise bumps the round even when the writer returned an empty draft", async () => {
+    const { graph, initial, writer } = setup();
+    writer.mockImplementationOnce(async () => ({ post: "", usedNoteIds: [], retrievedNotes: [] }));
+    await graph.invoke(initial, cfg);
+    const out: any = await resume(graph, { action: "revise", feedback: "f" });
+    expect(out.__interrupt__[0].value).toMatchObject({ round: 2 });
+  });
   it("nextAfterHuman never loops past round 3", () => {
     expect(nextAfterHuman({ round: 3, userDecision: { action: "revise" } } as any)).toBe("__end__");
     expect(nextAfterHuman({ round: 2, userDecision: { action: "revise" } } as any)).toBe("write");

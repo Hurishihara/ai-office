@@ -14,8 +14,11 @@ export function makeEmbeddings(modelId: string, apiKey: string): OpenAIEmbedding
 }
 
 export function describeModelError(err: unknown): string {
-  const e = err as { status?: number; message?: string };
-  if (e?.status === 429) return "The model is rate-limited (free tier). Wait a minute or pick another model at reception.";
-  if (e?.status === 401) return "OpenRouter rejected the API key. Check OPENROUTER_API_KEY in .env.";
+  const e = err as { status?: number; statusCode?: number; name?: string; message?: string };
+  const status = e?.status ?? e?.statusCode; // @langchain/openrouter errors use statusCode
+  if (status === 429) return "The model is rate-limited (free tier). Wait a minute or pick another model at reception.";
+  if (status === 401) return "OpenRouter rejected the API key. Check OPENROUTER_API_KEY in .env.";
+  if (e?.name === "TimeoutError") return "The model took too long. Press Retry or pick a faster model at reception.";
+  if (e?.name === "ChromaConnectionError") return "Chroma is not reachable. Start it with: docker compose up -d";
   return `Model call failed: ${e?.message ?? String(err)}`;
 }

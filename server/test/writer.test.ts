@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import type { RetrievedChunk } from "@ai-office/shared";
-import { makeSearchTool, resolveUsedRefs, makeWriter, invokeWithTimeout, MAX_SEARCHES } from "../src/pipeline/writer.js";
-import { applyLengthCheck } from "../src/pipeline/qa.js";
+import { makeSearchTool, resolveUsedRefs, makeWriter, invokeWithTimeout, MAX_SEARCHES, WRITER_TIMEOUT_MS } from "../src/pipeline/writer.js";
+import { applyLengthCheck, makeQa } from "../src/pipeline/qa.js";
+import { MODEL_TIMEOUT_MS } from "../src/models/openrouter.js";
+
+// Only createAgent is stubbed; `tool` stays real for the search-tool tests.
+const agentInvoke = vi.hoisted(() => vi.fn());
+vi.mock("langchain", async (orig) => ({ ...(await orig<typeof import("langchain")>()), createAgent: () => ({ invoke: agentInvoke }) }));
+const input = { platform: "x" as const, ask: "a", preferences: { tone: "", audience: "", emoji: "none" as const, hashtags: "", extra: "" }, onSearch: () => {} };
 
 const chunk = (noteId: string, chunkIndex: number): RetrievedChunk => ({ noteId, title: `T-${noteId}`, chunkIndex, text: `text ${noteId}/${chunkIndex}`, score: 1 });
 const mk = (search: (q: string, k: number) => Promise<RetrievedChunk[]>) => {
@@ -48,7 +54,6 @@ it("each writer run gets its own search budget", async () => {
     return { post: "p", usedRefs: ["N1"] };
   };
   const write = makeWriter({ model: async () => ({}) as never, search, runAgent: runAgent as never });
-  const input = { platform: "x" as const, ask: "a", preferences: { tone: "", audience: "", emoji: "none" as const, hashtags: "", extra: "" }, onSearch: () => {} };
   await write(input);
   const r = await write(input);
   expect(search).toHaveBeenCalledTimes(8);
@@ -57,9 +62,47 @@ it("each writer run gets its own search budget", async () => {
 });
 
 it("agent invocations carry a timeout abort signal", async () => {
+  const timeout = vi.spyOn(AbortSignal, "timeout");
   const invoke = vi.fn(async () => ({}));
   await invokeWithTimeout({ invoke }, "hi");
-  expect((invoke.mock.calls[0] as unknown[])[1]).toMatchObject({ signal: expect.any(AbortSignal) });
+  expect((invoke.mock.calls[0] as unknown[])[1]).toEqual({ signal: expect.any(AbortSignal) });
+  expect(timeout).toHaveBeenCalledWith(MODEL_TIMEOUT_MS);
+  timeout.mockRestore();
+});
+
+it("a failing note search fails the writer run instead of writing without notes", async () => {
+  const down = new Error("Failed to connect to Chroma");
+  let toolSaid: unknown;
+  const runAgent = async ({ tool }: { tool: { invoke: (i: { query: string }) => Promise<unknown> } }) => {
+    toolSaid = await tool.invoke({ query: "q" });
+    return { post: "p", usedRefs: [] };
+  };
+  const write = makeWriter({ model: async () => ({}) as never, search: async () => { throw down; }, runAgent: runAgent as never });
+  await expect(write(input)).rejects.toBe(down);
+  expect(toolSaid).toBe("Note search failed.");
+});
+
+describe("default agent runs (createAgent stubbed)", () => {
+  it("the writer gets its own time budget and a recursion limit", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    agentInvoke.mockResolvedValueOnce({ structuredResponse: { post: "p", usedRefs: [] } });
+    await makeWriter({ model: async () => ({}) as never, search: async () => [] })(input);
+    expect(timeout).toHaveBeenCalledWith(WRITER_TIMEOUT_MS);
+    expect(WRITER_TIMEOUT_MS).toBe(MODEL_TIMEOUT_MS * (MAX_SEARCHES + 2));
+    expect(agentInvoke.mock.calls.at(-1)?.[1]).toMatchObject({ recursionLimit: 12 });
+    timeout.mockRestore();
+  });
+  it("the writer throws when the model returns no structured response", async () => {
+    agentInvoke.mockResolvedValueOnce({});
+    await expect(makeWriter({ model: async () => ({}) as never, search: async () => [] })(input)).rejects.toThrow("Writer returned no structured response");
+  });
+  it("QA keeps the per-call timeout and throws when there is no structured response", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    agentInvoke.mockResolvedValueOnce({});
+    await expect(makeQa({ model: async () => ({}) as never })({ platform: "x", preferences: input.preferences, draft: "d", usedNotes: [] })).rejects.toThrow("QA returned no structured response");
+    expect(timeout).toHaveBeenCalledWith(MODEL_TIMEOUT_MS);
+    timeout.mockRestore();
+  });
 });
 
 describe("applyLengthCheck", () => {
