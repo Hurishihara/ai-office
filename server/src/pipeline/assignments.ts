@@ -1,15 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { Command } from "@langchain/langgraph";
 import { MAX_ROUNDS, type AssignmentStatus, type AssignmentSummary, type AssignmentView, type Platform, type UserDecision } from "@ai-office/shared";
-import type { EventBus } from "../events.js";
+import type { EventBus } from "../core/event-bus.js";
 import type { PreferencesStore } from "../preferences.js";
-import { readJson, writeJson } from "../jsonFile.js";
+import { readJson, writeJson } from "../core/json-file.js";
+import { NotFoundError, ConflictError, BadRequestError } from "../core/errors.js";
 import { describeModelError } from "../models/openrouter.js";
 import type { buildGraph, PipelineState } from "./graph.js";
 
-export class NotFoundError extends Error {}
-export class ConflictError extends Error {}
-export class BadRequestError extends Error {}
 
 type IndexEntry = AssignmentSummary & { error: string | null };
 type Graph = ReturnType<typeof buildGraph>;

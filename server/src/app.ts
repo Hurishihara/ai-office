@@ -9,7 +9,7 @@ import { modelsRouter } from "./routes/models.js";
 import { settingsRouter } from "./routes/settings.js";
 import type { AssignmentService } from "./pipeline/assignments.js";
 import { assignmentsRouter } from "./routes/assignments.js";
-import type { EventBus } from "./events.js";
+import type { EventBus } from "./core/event-bus.js";
 import { eventsRouter } from "./routes/events.js";
 
 export interface AppDeps { // grows one field per task; routers mount only when their dep is present

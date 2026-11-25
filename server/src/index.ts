@@ -10,7 +10,7 @@ import { ChromaVectorIndex } from "./notes/vectorIndex.js";
 import { NoteService } from "./notes/noteService.js";
 import { ModelCatalog } from "./models/catalog.js";
 import { makeChatModel, makeEmbeddings } from "./models/openrouter.js";
-import { EventBus } from "./events.js";
+import { EventBus } from "./core/event-bus.js";
 import { buildGraph } from "./pipeline/graph.js";
 import { makeWriter } from "./pipeline/writer.js";
 import { makeQa } from "./pipeline/qa.js";

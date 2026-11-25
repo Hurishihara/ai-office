@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp } from "../src/app.js";
-import { EventBus } from "../src/events.js";
+import { EventBus } from "../src/core/event-bus.js";
 
 let server: http.Server | undefined;
 afterEach(() => { server?.closeAllConnections(); server?.close(); });

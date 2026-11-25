@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Settings } from "@ai-office/shared";
-import { readJson, writeJson } from "./jsonFile.js";
+import { readJson, writeJson } from "./core/json-file.js";
 
 export const SettingsSchema = z.object({ writerModel: z.string().min(1), qaModel: z.string().min(1) });
 

@@ -6,7 +6,7 @@ import path from "node:path";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import type { AssignmentStatus, QaReview, ServerEvent } from "@ai-office/shared";
 import { createApp } from "../src/app.js";
-import { EventBus } from "../src/events.js";
+import { EventBus } from "../src/core/event-bus.js";
 import { AssignmentService } from "../src/pipeline/assignments.js";
 import { buildGraph } from "../src/pipeline/graph.js";
 import type { WriterFn } from "../src/pipeline/writer.js";

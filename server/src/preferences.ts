@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Preferences } from "@ai-office/shared";
-import { readJson, writeJson } from "./jsonFile.js";
+import { readJson, writeJson } from "./core/json-file.js";
 
 const text = z.string().max(2000);
 export const PreferencesSchema = z.object({

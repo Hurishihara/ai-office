@@ -7,6 +7,7 @@ Rules and tree: [module-layer.md](module-layer.md).
 Belongs: aggregates and value objects, as OOP classes.
 - Value objects validate in the constructor or a static `create()`, are immutable, compare with `equals()`.
 - Aggregates guard their own invariants and expose intention-revealing methods. No public setters.
+- Props are primitives by default. Make a value object only when it has its own behavior or is reused across aggregates.
 
 Doesn't: I/O, libraries (only `@ai-office/shared` types), ports, use cases, anything from `application/` or `infra/`. Imports only its own aggregate's `domain/`, `core/` and `node:*`.
 
