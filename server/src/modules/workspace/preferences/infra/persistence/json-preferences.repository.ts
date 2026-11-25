@@ -7,10 +7,9 @@ export class JsonPreferencesRepository implements PreferencesRepository {
   constructor(private readonly file: string) {}
 
   async get(): Promise<Preferences | null> {
-    const raw = await readJson<unknown>(this.file, null);
-    if (raw === null) return null;
     try {
-      return PreferencesMapper.toDomain(raw);
+      const raw = await readJson<unknown>(this.file, null);
+      return raw === null ? null : PreferencesMapper.toDomain(raw);
     } catch (e) {
       throw new Error(`Invalid preferences in ${this.file}: ${(e as Error).message}`);
     }

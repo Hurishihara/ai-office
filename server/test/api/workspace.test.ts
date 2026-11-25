@@ -18,6 +18,15 @@ async function app() {
 }
 
 describe("preferences", () => {
+  it("invalid stored file → GET 500 and the file is left untouched", async () => {
+    const file = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "prefs-")), "preferences.json");
+    const bytes = JSON.stringify({ ...DEFAULT_PREFERENCES, emoji: "lots" });
+    await fs.writeFile(file, bytes);
+    const repo = new JsonPreferencesRepository(file);
+    const a = createApp({ preferences: { get: new GetPreferences(repo), update: new UpdatePreferences(repo) } });
+    expect((await request(a).get("/api/preferences")).status).toBe(500);
+    expect(await fs.readFile(file, "utf8")).toBe(bytes);
+  });
   it("returns defaults when no file exists", async () => {
     const res = await request(await app()).get("/api/preferences");
     expect(res.status).toBe(200);

@@ -20,6 +20,10 @@ describe("JsonPreferencesRepository", () => {
     expect((await repo.get())?.toJSON()).toEqual(d);
   });
   it("missing file → null", async () => expect(await repo.get()).toBeNull());
+  it("malformed JSON → error naming the file", async () => {
+    await fs.writeFile(file, "{");
+    await expect(repo.get()).rejects.toThrow(file);
+  });
   it("invalid stored file → error naming the file", async () => {
     await fs.writeFile(file, JSON.stringify({ ...d, emoji: "lots" }));
     await expect(repo.get()).rejects.toThrow(file);
