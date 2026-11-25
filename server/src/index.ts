@@ -7,7 +7,9 @@ import { loadConfig } from "./config.js";
 import { JsonPreferencesRepository } from "./modules/workspace/preferences/infra/persistence/json-preferences.repository.js";
 import { GetPreferences } from "./modules/workspace/preferences/application/usecases/get-preferences.usecase.js";
 import { UpdatePreferences } from "./modules/workspace/preferences/application/usecases/update-preferences.usecase.js";
-import { SettingsStore } from "./settings.js";
+import { JsonSettingsRepository } from "./modules/workspace/settings/infra/persistence/json-settings.repository.js";
+import { GetSettings } from "./modules/workspace/settings/application/usecases/get-settings.usecase.js";
+import { UpdateSettings } from "./modules/workspace/settings/application/usecases/update-settings.usecase.js";
 import { ChromaVectorIndex } from "./notes/vectorIndex.js";
 import { NoteService } from "./notes/noteService.js";
 import { ModelCatalog } from "./models/catalog.js";
@@ -28,10 +30,12 @@ const index = new ChromaVectorIndex({
 const preferencesRepo = new JsonPreferencesRepository(path.join(config.dataDir, "preferences.json"));
 const getPreferences = new GetPreferences(preferencesRepo);
 const updatePreferences = new UpdatePreferences(preferencesRepo);
-const settings = new SettingsStore(path.join(config.dataDir, "settings.json"), { writerModel: config.writerModel, qaModel: config.qaModel });
+const settingsRepo = new JsonSettingsRepository(path.join(config.dataDir, "settings.json"));
+const getSettings = new GetSettings(settingsRepo, { writerModel: config.writerModel, qaModel: config.qaModel });
+const updateSettings = new UpdateSettings(settingsRepo);
 const bus = new EventBus();
 // Read settings on every run so a model switch at reception applies to the next step.
-const model = (pick: (s: Settings) => string) => async () => makeChatModel(pick(await settings.get()), config.openrouterApiKey);
+const model = (pick: (s: Settings) => string) => async () => makeChatModel(pick(await getSettings.execute()), config.openrouterApiKey);
 const graph = buildGraph({
   writer: makeWriter({ model: model((s) => s.writerModel), search: (q, k) => index.search(q, k) }),
   qa: makeQa({ model: model((s) => s.qaModel) }),
@@ -46,7 +50,7 @@ if (!(await index.heartbeat())) console.warn(`Chroma is not reachable at ${confi
 
 createApp({
   preferences: { get: getPreferences, update: updatePreferences },
-  settings,
+  settings: { get: getSettings, update: updateSettings },
   notes: new NoteService({ notesDir: path.join(config.dataDir, "notes"), index }),
   catalog: new ModelCatalog({}),
   chromaUrl: config.chromaUrl,

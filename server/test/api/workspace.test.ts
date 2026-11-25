@@ -8,6 +8,9 @@ import { JsonPreferencesRepository } from "../../src/modules/workspace/preferenc
 import { GetPreferences } from "../../src/modules/workspace/preferences/application/usecases/get-preferences.usecase.js";
 import { UpdatePreferences } from "../../src/modules/workspace/preferences/application/usecases/update-preferences.usecase.js";
 import { Preferences } from "../../src/modules/workspace/preferences/domain/preferences.js";
+import { JsonSettingsRepository } from "../../src/modules/workspace/settings/infra/persistence/json-settings.repository.js";
+import { GetSettings } from "../../src/modules/workspace/settings/application/usecases/get-settings.usecase.js";
+import { UpdateSettings } from "../../src/modules/workspace/settings/application/usecases/update-settings.usecase.js";
 
 const DEFAULT_PREFERENCES = Preferences.defaults().toJSON();
 
@@ -42,5 +45,30 @@ describe("preferences", () => {
     const res = await request(await app()).put("/api/preferences").send({ ...DEFAULT_PREFERENCES, emoji: "lots" });
     expect(res.status).toBe(400);
     expect(typeof res.body.error).toBe("string");
+  });
+});
+
+const defaults = { writerModel: "w", qaModel: "q" };
+const tmpFile = async () => path.join(await fs.mkdtemp(path.join(os.tmpdir(), "settings-")), "settings.json");
+const settingsApp = (file: string) => {
+  const repo = new JsonSettingsRepository(file);
+  return createApp({ settings: { get: new GetSettings(repo, defaults), update: new UpdateSettings(repo) } });
+};
+
+describe("settings", () => {
+  it("falls back to the defaults passed in from .env", async () => {
+    const res = await request(settingsApp(await tmpFile())).get("/api/settings");
+    expect(res.body).toEqual(defaults);
+  });
+  it("PUT persists the chosen models", async () => {
+    const file = await tmpFile();
+    const chosen = { writerModel: "w2", qaModel: "q2" };
+    const res = await request(settingsApp(file)).put("/api/settings").send(chosen);
+    expect(res.status).toBe(200);
+    expect(await new GetSettings(new JsonSettingsRepository(file), defaults).execute()).toEqual(chosen);
+  });
+  it("rejects an empty model id", async () => {
+    const res = await request(settingsApp(await tmpFile())).put("/api/settings").send({ writerModel: "", qaModel: "q" });
+    expect(res.status).toBe(400);
   });
 });
