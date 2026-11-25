@@ -3,8 +3,7 @@ import { preferencesController, type PreferencesUseCases } from "./modules/works
 import { settingsController, type SettingsUseCases } from "./modules/workspace/settings/infra/interface/settings.controller.js";
 import type { NoteService } from "./notes/noteService.js";
 import { notesRouter } from "./routes/notes.js";
-import type { ModelCatalog } from "./models/catalog.js";
-import { modelsRouter } from "./routes/models.js";
+import { modelsController, type ModelsUseCases } from "./modules/workspace/model-catalog/infra/interface/models.controller.js";
 import type { AssignmentService } from "./pipeline/assignments.js";
 import { assignmentsRouter } from "./routes/assignments.js";
 import type { EventBus } from "./core/event-bus.js";
@@ -14,7 +13,7 @@ export interface AppDeps { // grows one field per task; routers mount only when 
   preferences: PreferencesUseCases;
   settings: SettingsUseCases;
   notes: NoteService;
-  catalog: ModelCatalog;
+  models: ModelsUseCases;
   chromaUrl: string; // only used in the notes 503 message
   assignments: AssignmentService;
   bus: EventBus;
@@ -35,7 +34,7 @@ export function createApp(deps: Partial<AppDeps> = {}): express.Express {
   if (deps.preferences) app.use("/api/preferences", preferencesController(deps.preferences));
   if (deps.settings) app.use("/api/settings", settingsController(deps.settings));
   if (deps.notes) app.use("/api/notes", notesRouter(deps.notes, deps.chromaUrl ?? "http://localhost:8000"));
-  if (deps.catalog) app.use("/api/models", modelsRouter(deps.catalog));
+  if (deps.models) app.use("/api/models", modelsController(deps.models));
   if (deps.assignments) app.use("/api/assignments", assignmentsRouter(deps.assignments));
   if (deps.bus) app.use("/api/events", eventsRouter(deps.bus));
   return app;

@@ -3,6 +3,7 @@ import request from "supertest";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import fixture from "../fixtures/openrouter-models.json" with { type: "json" };
 import { createApp } from "../../src/app.js";
 import { JsonPreferencesRepository } from "../../src/modules/workspace/preferences/infra/persistence/json-preferences.repository.js";
 import { GetPreferences } from "../../src/modules/workspace/preferences/application/usecases/get-preferences.usecase.js";
@@ -11,6 +12,8 @@ import { Preferences } from "../../src/modules/workspace/preferences/domain/pref
 import { JsonSettingsRepository } from "../../src/modules/workspace/settings/infra/persistence/json-settings.repository.js";
 import { GetSettings } from "../../src/modules/workspace/settings/application/usecases/get-settings.usecase.js";
 import { UpdateSettings } from "../../src/modules/workspace/settings/application/usecases/update-settings.usecase.js";
+import { ListModels } from "../../src/modules/workspace/model-catalog/application/usecases/list-models.usecase.js";
+import { OpenRouterModelSource } from "../../src/modules/workspace/model-catalog/infra/external/openrouter-model-source.external.js";
 
 const DEFAULT_PREFERENCES = Preferences.defaults().toJSON();
 
@@ -70,5 +73,14 @@ describe("settings", () => {
   it("rejects an empty model id", async () => {
     const res = await request(settingsApp(await tmpFile())).put("/api/settings").send({ writerModel: "", qaModel: "q" });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("models", () => {
+  it("GET /api/models filters and defaults to freeOnly", async () => {
+    const fetchFn = (async () => new Response(JSON.stringify(fixture))) as unknown as typeof fetch;
+    const a = createApp({ models: { list: new ListModels(new OpenRouterModelSource({ fetchFn })) } });
+    expect((await request(a).get("/api/models?role=writer")).body.map((m: { id: string }) => m.id)).toEqual(["free/tools"]);
+    expect((await request(a).get("/api/models?role=qa&freeOnly=false")).body).toHaveLength(2);
   });
 });

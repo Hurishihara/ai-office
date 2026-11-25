@@ -1,4 +1,5 @@
 import type { ModelInfo } from "@ai-office/shared";
+import type { ModelSource } from "../../application/ports/model-source.port.js";
 
 interface RawModel {
   id: string;
@@ -22,12 +23,7 @@ export function toModelInfo(raw: RawModel): ModelInfo {
   };
 }
 
-// Both roles need tools: QA's structured output uses LangChain's tool strategy.
-export function filterModels(models: ModelInfo[], opts: { role: "writer" | "qa"; freeOnly: boolean }): ModelInfo[] {
-  return models.filter((m) => m.supportsTools && (!opts.freeOnly || m.free)).sort((a, b) => a.name.localeCompare(b.name));
-}
-
-export class ModelCatalog {
+export class OpenRouterModelSource implements ModelSource {
   private cache: { at: number; models: ModelInfo[] } | null = null;
   private fetchFn: typeof fetch;
   private ttlMs: number;

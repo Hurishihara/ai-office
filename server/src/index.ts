@@ -12,7 +12,8 @@ import { GetSettings } from "./modules/workspace/settings/application/usecases/g
 import { UpdateSettings } from "./modules/workspace/settings/application/usecases/update-settings.usecase.js";
 import { ChromaVectorIndex } from "./notes/vectorIndex.js";
 import { NoteService } from "./notes/noteService.js";
-import { ModelCatalog } from "./models/catalog.js";
+import { ListModels } from "./modules/workspace/model-catalog/application/usecases/list-models.usecase.js";
+import { OpenRouterModelSource } from "./modules/workspace/model-catalog/infra/external/openrouter-model-source.external.js";
 import { makeChatModel, makeEmbeddings } from "./models/openrouter.js";
 import { EventBus } from "./core/event-bus.js";
 import { buildGraph } from "./pipeline/graph.js";
@@ -52,7 +53,7 @@ createApp({
   preferences: { get: getPreferences, update: updatePreferences },
   settings: { get: getSettings, update: updateSettings },
   notes: new NoteService({ notesDir: path.join(config.dataDir, "notes"), index }),
-  catalog: new ModelCatalog({}),
+  models: { list: new ListModels(new OpenRouterModelSource()) },
   chromaUrl: config.chromaUrl,
   assignments,
   bus,
