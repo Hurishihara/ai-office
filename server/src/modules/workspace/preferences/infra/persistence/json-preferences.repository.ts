@@ -11,7 +11,7 @@ export class JsonPreferencesRepository implements PreferencesRepository {
       const raw = await readJson<unknown>(this.file, null);
       return raw === null ? null : PreferencesMapper.toDomain(raw);
     } catch (e) {
-      throw new Error(`Invalid preferences in ${this.file}: ${(e as Error).message}`);
+      throw new Error(`Could not read preferences from ${this.file}: ${(e as Error).message}`, { cause: e });
     }
   }
 

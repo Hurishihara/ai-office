@@ -7,7 +7,6 @@ import { NotFoundError, ConflictError, BadRequestError } from "../core/errors.js
 import { describeModelError } from "../models/openrouter.js";
 import type { buildGraph, PipelineState } from "./graph.js";
 
-
 type IndexEntry = AssignmentSummary & { error: string | null };
 type Graph = ReturnType<typeof buildGraph>;
 

@@ -11,7 +11,7 @@ export class JsonSettingsRepository implements SettingsRepository {
       const raw = await readJson<unknown>(this.file, null);
       return raw === null ? null : SettingsMapper.toDomain(raw);
     } catch (e) {
-      throw new Error(`Invalid settings in ${this.file}: ${(e as Error).message}`);
+      throw new Error(`Could not read settings from ${this.file}: ${(e as Error).message}`, { cause: e });
     }
   }
 

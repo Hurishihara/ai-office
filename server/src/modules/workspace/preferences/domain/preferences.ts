@@ -16,7 +16,8 @@ export class Preferences {
     }
     if (!EMOJI.includes(props.emoji)) errors.push(`emoji: must be one of ${EMOJI.join(", ")}`);
     if (errors.length) throw new BadRequestError(errors.join("; "));
-    return new Preferences({ ...props });
+    // pick explicitly so extra keys never reach responses or the saved file
+    return new Preferences({ tone: props.tone, audience: props.audience, emoji: props.emoji, hashtags: props.hashtags, extra: props.extra });
   }
 
   static defaults(): Preferences {
