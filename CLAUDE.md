@@ -1,0 +1,1 @@
+Backend (`server/`) work: read `server/src/context/module-layer.md` first, then the layer file for the folder you touch. Creating or renaming a file: `server/src/context/naming-convention.md`. Run `npm test` and `npm run lint` before committing. Old code outside `server/src/modules/` is being migrated; don't add new code there.
