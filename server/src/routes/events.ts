@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { EventBus } from "../events.js";
+import type { EventBus } from "../core/event-bus.js";
 
 const PING_MS = 25_000;
 

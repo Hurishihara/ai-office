@@ -1,22 +1,19 @@
 import express from "express";
-import type { PreferencesStore } from "./preferences.js";
-import type { SettingsStore } from "./settings.js";
-import { preferencesRouter } from "./routes/preferences.js";
+import { preferencesController, type PreferencesUseCases } from "./modules/workspace/preferences/infra/interface/preferences.controller.js";
+import { settingsController, type SettingsUseCases } from "./modules/workspace/settings/infra/interface/settings.controller.js";
 import type { NoteService } from "./notes/noteService.js";
 import { notesRouter } from "./routes/notes.js";
-import type { ModelCatalog } from "./models/catalog.js";
-import { modelsRouter } from "./routes/models.js";
-import { settingsRouter } from "./routes/settings.js";
+import { modelsController, type ModelsUseCases } from "./modules/workspace/model-catalog/infra/interface/models.controller.js";
 import type { AssignmentService } from "./pipeline/assignments.js";
 import { assignmentsRouter } from "./routes/assignments.js";
-import type { EventBus } from "./events.js";
+import type { EventBus } from "./core/event-bus.js";
 import { eventsRouter } from "./routes/events.js";
 
 export interface AppDeps { // grows one field per task; routers mount only when their dep is present
-  preferences: PreferencesStore;
-  settings: SettingsStore;
+  preferences: PreferencesUseCases;
+  settings: SettingsUseCases;
   notes: NoteService;
-  catalog: ModelCatalog;
+  models: ModelsUseCases;
   chromaUrl: string; // only used in the notes 503 message
   assignments: AssignmentService;
   bus: EventBus;
@@ -34,10 +31,10 @@ export function createApp(deps: Partial<AppDeps> = {}): express.Express {
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
   });
-  if (deps.preferences) app.use("/api/preferences", preferencesRouter(deps.preferences));
-  if (deps.settings) app.use("/api/settings", settingsRouter(deps.settings));
+  if (deps.preferences) app.use("/api/preferences", preferencesController(deps.preferences));
+  if (deps.settings) app.use("/api/settings", settingsController(deps.settings));
   if (deps.notes) app.use("/api/notes", notesRouter(deps.notes, deps.chromaUrl ?? "http://localhost:8000"));
-  if (deps.catalog) app.use("/api/models", modelsRouter(deps.catalog));
+  if (deps.models) app.use("/api/models", modelsController(deps.models));
   if (deps.assignments) app.use("/api/assignments", assignmentsRouter(deps.assignments));
   if (deps.bus) app.use("/api/events", eventsRouter(deps.bus));
   return app;

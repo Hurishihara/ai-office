@@ -1,0 +1,21 @@
+import { readJson, writeJson } from "../../../../../core/json-file.js";
+import type { Preferences } from "../../domain/preferences.js";
+import type { PreferencesRepository } from "../adapter/preferences.repository.js";
+import { PreferencesMapper } from "./preferences.mapper.js";
+
+export class JsonPreferencesRepository implements PreferencesRepository {
+  constructor(private readonly file: string) {}
+
+  async get(): Promise<Preferences | null> {
+    try {
+      const raw = await readJson<unknown>(this.file, null);
+      return raw === null ? null : PreferencesMapper.toDomain(raw);
+    } catch (e) {
+      throw new Error(`Could not read preferences from ${this.file}: ${(e as Error).message}`, { cause: e });
+    }
+  }
+
+  async save(p: Preferences): Promise<void> {
+    await writeJson(this.file, PreferencesMapper.toPersistence(p));
+  }
+}

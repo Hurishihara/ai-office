@@ -1,7 +1,8 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import { PLATFORMS, type Platform } from "@ai-office/shared";
-import { BadRequestError, ConflictError, NotFoundError, type AssignmentService } from "../pipeline/assignments.js";
+import { BadRequestError, ConflictError, NotFoundError } from "../core/errors.js";
+import type { AssignmentService } from "../pipeline/assignments.js";
 
 const StartSchema = z.object({ platform: z.enum(PLATFORMS as [Platform, ...Platform[]]), ask: z.string().min(1).max(2000) });
 const DecisionSchema = z.object({ action: z.enum(["approve", "revise", "discard"]), feedback: z.string().optional() });

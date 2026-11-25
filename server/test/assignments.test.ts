@@ -6,11 +6,12 @@ import path from "node:path";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import type { AssignmentStatus, QaReview, ServerEvent } from "@ai-office/shared";
 import { createApp } from "../src/app.js";
-import { EventBus } from "../src/events.js";
+import { EventBus } from "../src/core/event-bus.js";
 import { AssignmentService } from "../src/pipeline/assignments.js";
 import { buildGraph } from "../src/pipeline/graph.js";
 import type { WriterFn } from "../src/pipeline/writer.js";
-import { PreferencesStore } from "../src/preferences.js";
+import { JsonPreferencesRepository } from "../src/modules/workspace/preferences/infra/persistence/json-preferences.repository.js";
+import { GetPreferences } from "../src/modules/workspace/preferences/application/usecases/get-preferences.usecase.js";
 import { describeModelError } from "../src/models/openrouter.js";
 
 const review: QaReview = { verdict: "pass", issues: [], suggestions: [] };
@@ -30,7 +31,7 @@ async function setup(opts: { dir?: string; writer?: WriterFn } = {}) {
     checkpointer: SqliteSaver.fromConnString(path.join(dir, "checkpoints.sqlite")),
     emit: (e) => bus.publish(e),
   });
-  const service = new AssignmentService({ graph, preferences: new PreferencesStore(path.join(dir, "preferences.json")), indexFile: path.join(dir, "assignments.json"), bus });
+  const service = new AssignmentService({ graph, preferences: { get: () => new GetPreferences(new JsonPreferencesRepository(path.join(dir, "preferences.json"))).execute() }, indexFile: path.join(dir, "assignments.json"), bus });
   await service.load();
   const app = createApp({ assignments: service, bus });
   const waitForStatus = (id: string, status: AssignmentStatus) => waitFor(async () => (await service.get(id))?.status === status);
