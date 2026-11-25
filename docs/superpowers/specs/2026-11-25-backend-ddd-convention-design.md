@@ -90,7 +90,8 @@ Naming is enforced by ESLint (`check-file/filename-naming-convention` + folder-t
 
 ## Deliverables
 
-- `server/src/context/module-layer.md` — entry point: tree, dependency rules, naming table, how to add a module/aggregate, how to migrate old code.
+- `server/src/context/module-layer.md` — entry point: tree, dependency rules, link to naming, how to add a module/aggregate, how to migrate old code.
+- `server/src/context/naming-convention.md` — the only place naming rules are written (table, casing, class names, tech prefix, `execute`); other files link to it. *(Added by owner 2026-11-25.)*
 - `server/src/context/domain-layer.md`, `application-layer.md`, `infra-layer.md` — per layer: what belongs, folder rules, example from the `Assignment` aggregate, first test, checklist.
 - `server/src/context/architecture.test.ts` — import + naming rules; passes trivially while `modules/` is empty.
 - `eslint.config.js` (server) + `npm run lint`; dev deps `eslint`, `typescript-eslint`, `eslint-plugin-check-file`.
