@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
+import { ESLint } from "eslint";
 import { checkFileName, checkImport, parseImports, scanModules } from "./architecture.js";
 
 const R = "/repo/server/src/modules";
@@ -69,4 +70,24 @@ describe("checkImport", () => {
 
 it("the real src/modules tree follows the convention", () => {
   expect(scanModules(fileURLToPath(new URL("../modules", import.meta.url)))).toEqual([]);
+});
+
+describe("eslint config", { timeout: 30_000 }, () => {
+  const serverDir = fileURLToPath(new URL("../..", import.meta.url));
+  const lint = async (filePath: string, code: string) =>
+    (await new ESLint({ cwd: serverDir }).lintText(code, { filePath }))[0].messages.map((m) => m.ruleId);
+  const uc = "src/modules/a/agg/application/usecases/do-thing.usecase.ts";
+  it("flags application importing persistence", async () => {
+    expect(await lint(uc, `import { X } from "../../infra/persistence/sqlite-agg.repository.js";`)).toContain("@typescript-eslint/no-restricted-imports");
+  });
+  it("allows a type-only import of the repository port", async () => {
+    expect(await lint(uc, `import type { AggRepository } from "../../infra/adapter/agg.repository.js";`)).toEqual([]);
+  });
+  it("flags a wrongly named use case file", async () => {
+    expect(await lint("src/modules/a/agg/application/usecases/DoThing.ts", `export {};`)).toContain("check-file/filename-naming-convention");
+  });
+  it("flags infra-only libs in domain but allows vitest in tests", async () => {
+    expect(await lint("src/modules/a/agg/domain/agg.ts", `import express from "express";`)).toContain("@typescript-eslint/no-restricted-imports");
+    expect(await lint("src/modules/a/agg/domain/agg.test.ts", `import { it } from "vitest";`)).toEqual([]);
+  });
 });
