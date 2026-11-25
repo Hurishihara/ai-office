@@ -3,12 +3,18 @@ import request from "supertest";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createApp } from "../src/app.js";
-import { PreferencesStore, DEFAULT_PREFERENCES } from "../src/preferences.js";
+import { createApp } from "../../src/app.js";
+import { JsonPreferencesRepository } from "../../src/modules/workspace/preferences/infra/persistence/json-preferences.repository.js";
+import { GetPreferences } from "../../src/modules/workspace/preferences/application/usecases/get-preferences.usecase.js";
+import { UpdatePreferences } from "../../src/modules/workspace/preferences/application/usecases/update-preferences.usecase.js";
+import { Preferences } from "../../src/modules/workspace/preferences/domain/preferences.js";
+
+const DEFAULT_PREFERENCES = Preferences.defaults().toJSON();
 
 async function app() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "prefs-"));
-  return createApp({ preferences: new PreferencesStore(path.join(dir, "preferences.json")) });
+  const repo = new JsonPreferencesRepository(path.join(dir, "preferences.json"));
+  return createApp({ preferences: { get: new GetPreferences(repo), update: new UpdatePreferences(repo) } });
 }
 
 describe("preferences", () => {

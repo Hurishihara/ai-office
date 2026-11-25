@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Command } from "@langchain/langgraph";
-import { MAX_ROUNDS, type AssignmentStatus, type AssignmentSummary, type AssignmentView, type Platform, type UserDecision } from "@ai-office/shared";
+import { MAX_ROUNDS, type AssignmentStatus, type AssignmentSummary, type AssignmentView, type Platform, type Preferences, type UserDecision } from "@ai-office/shared";
 import type { EventBus } from "../core/event-bus.js";
-import type { PreferencesStore } from "../preferences.js";
 import { readJson, writeJson } from "../core/json-file.js";
 import { NotFoundError, ConflictError, BadRequestError } from "../core/errors.js";
 import { describeModelError } from "../models/openrouter.js";
@@ -17,13 +16,13 @@ const MAX_FEEDBACK = 2000;
 
 export class AssignmentService {
   private graph: Graph;
-  private preferences: PreferencesStore;
+  private preferences: { get(): Promise<Preferences> };
   private indexFile: string;
   private bus: EventBus;
   private index = new Map<string, IndexEntry>();
   private saving: Promise<void> = Promise.resolve();
 
-  constructor(opts: { graph: Graph; preferences: PreferencesStore; indexFile: string; bus: EventBus }) {
+  constructor(opts: { graph: Graph; preferences: { get(): Promise<Preferences> }; indexFile: string; bus: EventBus }) {
     ({ graph: this.graph, preferences: this.preferences, indexFile: this.indexFile, bus: this.bus } = opts);
     // The writer's handoff is the only signal that a run moved from writing to QA.
     this.bus.subscribe((e) => {

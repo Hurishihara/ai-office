@@ -4,7 +4,9 @@ import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import type { Settings } from "@ai-office/shared";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
-import { PreferencesStore } from "./preferences.js";
+import { JsonPreferencesRepository } from "./modules/workspace/preferences/infra/persistence/json-preferences.repository.js";
+import { GetPreferences } from "./modules/workspace/preferences/application/usecases/get-preferences.usecase.js";
+import { UpdatePreferences } from "./modules/workspace/preferences/application/usecases/update-preferences.usecase.js";
 import { SettingsStore } from "./settings.js";
 import { ChromaVectorIndex } from "./notes/vectorIndex.js";
 import { NoteService } from "./notes/noteService.js";
@@ -23,7 +25,9 @@ const index = new ChromaVectorIndex({
   embeddingModel: config.embeddingModel,
   embeddings: makeEmbeddings(config.embeddingModel, config.openrouterApiKey),
 });
-const preferences = new PreferencesStore(path.join(config.dataDir, "preferences.json"));
+const preferencesRepo = new JsonPreferencesRepository(path.join(config.dataDir, "preferences.json"));
+const getPreferences = new GetPreferences(preferencesRepo);
+const updatePreferences = new UpdatePreferences(preferencesRepo);
 const settings = new SettingsStore(path.join(config.dataDir, "settings.json"), { writerModel: config.writerModel, qaModel: config.qaModel });
 const bus = new EventBus();
 // Read settings on every run so a model switch at reception applies to the next step.
@@ -34,14 +38,14 @@ const graph = buildGraph({
   checkpointer: SqliteSaver.fromConnString(path.join(config.dataDir, "checkpoints.sqlite")),
   emit: (e) => bus.publish(e),
 });
-const assignments = new AssignmentService({ graph, preferences, indexFile: path.join(config.dataDir, "assignments.json"), bus });
+const assignments = new AssignmentService({ graph, preferences: { get: () => getPreferences.execute() }, indexFile: path.join(config.dataDir, "assignments.json"), bus });
 await assignments.load();
 const recovered = await assignments.recoverInterrupted();
 if (recovered) console.log(`${recovered} assignment(s) were cut off by the last shutdown and are marked for Retry`);
 if (!(await index.heartbeat())) console.warn(`Chroma is not reachable at ${config.chromaUrl}. Start it with: docker compose up -d`);
 
 createApp({
-  preferences,
+  preferences: { get: getPreferences, update: updatePreferences },
   settings,
   notes: new NoteService({ notesDir: path.join(config.dataDir, "notes"), index }),
   catalog: new ModelCatalog({}),
