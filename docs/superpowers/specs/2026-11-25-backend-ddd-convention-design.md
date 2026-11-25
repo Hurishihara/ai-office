@@ -1,7 +1,7 @@
 # Backend DDD Convention — Design (short)
 
 Date: 2026-11-25
-Status: draft, awaiting approval
+Status: approved by owner 2026-11-25
 
 ## Intent
 
