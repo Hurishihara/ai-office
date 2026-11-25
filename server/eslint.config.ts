@@ -1,3 +1,4 @@
+// Root typescript@6 exists only for typescript-eslint; remove once it supports TS 7.
 import tseslint from "typescript-eslint";
 import checkFile from "eslint-plugin-check-file";
 import { INFRA_ONLY_LIBS } from "./src/context/architecture.js";
