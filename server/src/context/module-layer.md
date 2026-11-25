@@ -30,7 +30,7 @@ server/src/
 ## Dependency rules
 
 1. `domain/` imports only its own aggregate's `domain/` (and `core/`).
-2. `application/` imports `domain/` (of any aggregate in the same module), its own `application/`, `core/`, and type-only from `infra/adapter/`.
+2. `application/` imports `domain/` (of any aggregate in the same module), its own `application/` (including the module-level `application/services/`), `core/`, and type-only from `infra/adapter/`.
 3. `infra/` may import anything inside its own aggregate/module, plus `core/` and libraries.
 4. Outside libraries (`@langchain/*`, `langchain`, `chromadb`, `express`, `better-sqlite3`) only in `infra/` and `app.ts`/`index.ts`.
 5. A module never imports another module's files. Cross-module calls go through use cases wired in `app.ts`.
@@ -43,6 +43,8 @@ Also:
 ## core/
 
 Only what every module uses: `EventBus`, `NotFoundError` / `ConflictError` / `BadRequestError`, `readJson` / `writeJson`. Nothing module-specific goes there.
+
+`core/` is created on first need by moving the file from `src/` (e.g. `src/events.ts` → `src/core/event-bus.ts`), never by importing old code from a module.
 
 ## Wiring
 
@@ -72,5 +74,5 @@ Old code outside `modules/` moves one module at a time, each with its own plan.
 ## Enforcement
 
 Rules are enforced by `src/context/architecture.test.ts` (`npm test`) and `npm run lint`.
-- Cross-module imports are caught by the architecture test only. ESLint covers `src/modules` and `src/core`, not that rule.
+ESLint is a fast subset for in-editor feedback; `npm test` is authoritative. Layout (unknown folders), cross-aggregate, cross-module, old-code and domain-package rules are test-only. Rule 6 (`core/` imports no module) is lint-only.
 - The root `typescript@^6` devDependency exists only for typescript-eslint.

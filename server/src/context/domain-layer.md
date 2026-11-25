@@ -8,7 +8,7 @@ Belongs: aggregates and value objects, as OOP classes.
 - Value objects validate in the constructor or a static `create()`, are immutable, compare with `equals()`.
 - Aggregates guard their own invariants and expose intention-revealing methods. No public setters.
 
-Doesn't: I/O, libraries (only `@ai-office/shared` types), ports, use cases, anything from `application/` or `infra/`. Imports only its own aggregate's `domain/`.
+Doesn't: I/O, libraries (only `@ai-office/shared` types), ports, use cases, anything from `application/` or `infra/`. Imports only its own aggregate's `domain/`, `core/` and `node:*`.
 
 ## Folders
 
@@ -29,7 +29,7 @@ Pure unit test of the class. No fakes, no I/O.
 ## Checklist
 
 - [ ] Test written first, beside the file.
-- [ ] No imports except own `domain/` and `@ai-office/shared`.
+- [ ] No imports except own `domain/`, `core/`, `node:*` and `@ai-office/shared`.
 - [ ] Invariants live in the class, no public setters.
 - [ ] Value objects immutable, with `equals()`.
 - [ ] File name matches the naming convention.

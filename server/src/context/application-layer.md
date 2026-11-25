@@ -26,7 +26,7 @@ Names: see [naming-convention.md](naming-convention.md).
 
 ## First test (TDD)
 
-Use case with hand-written fakes of its ports.
+Use case with hand-written fakes of its ports. Fakes live inline in the `.test.ts` file (a non-test `fake-*.ts` in `usecases/` would fail naming).
 
 ## Checklist
 
