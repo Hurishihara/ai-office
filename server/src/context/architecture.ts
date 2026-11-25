@@ -7,6 +7,7 @@ export interface PathInfo {
   aggregate: string | null; // null for module-level application/services and infra/services
   layer: Layer;
   folder: string | null; // null for domain
+  testSupport?: boolean; // modules/__test__/{factories,helpers}; module is "__test__", layer/aggregate are placeholders
 }
 export interface Violation { file: string; rule: "unknown-folder" | "file-name" | "import"; message: string }
 
@@ -30,6 +31,9 @@ const ENDINGS: Record<string, string[]> = {
   external: [".external"],
 };
 
+const TEST_SUPPORT = "__test__";
+const TEST_SUPPORT_ENDINGS: Record<string, string[]> = { factories: [".factory", ".seeder"], helpers: [".helper"] };
+
 const norm = (p: string) => p.replaceAll("\\", "/");
 
 /** Path segments below modulesRoot, or null when the file is not under it. */
@@ -43,6 +47,9 @@ export function classifyPath(file: string, modulesRoot: string): PathInfo | null
   const s = relSegments(file, modulesRoot);
   if (!s) return null;
   const [module, second, third, fourth] = s;
+  if (module === TEST_SUPPORT) {
+    return s.length === 3 && second in TEST_SUPPORT_ENDINGS ? { module, aggregate: null, layer: "domain", folder: second, testSupport: true } : null;
+  }
   if ((second === "application" || second === "infra") && s.length === 4 && third === "services") {
     return { module, aggregate: null, layer: second, folder: "services" };
   }
@@ -58,11 +65,13 @@ export function checkFileName(file: string, modulesRoot: string): Violation | nu
   if (!relSegments(file, modulesRoot)) return null;
   const info = classifyPath(file, modulesRoot);
   if (!info) return { file, rule: "unknown-folder", message: "file is not in a valid modules/ folder layout" };
-  const folders = relSegments(file, modulesRoot)!.slice(0, info.aggregate === null ? 1 : 2);
-  const badDir = folders.find((d) => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(d));
-  if (badDir) return { file, rule: "file-name", message: `folder ${badDir} must be kebab-case` };
-  const endings = ENDINGS[info.folder ?? "domain"].map((e) => e.replaceAll(".", "\\."));
-  const re = new RegExp(`^[a-z0-9]+(-[a-z0-9]+)*(${endings.join("|")})(\\.test)?\\.ts$`);
+  if (!info.testSupport) {
+    const folders = relSegments(file, modulesRoot)!.slice(0, info.aggregate === null ? 1 : 2);
+    const badDir = folders.find((d) => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(d));
+    if (badDir) return { file, rule: "file-name", message: `folder ${badDir} must be kebab-case` };
+  }
+  const endings = (info.testSupport ? TEST_SUPPORT_ENDINGS : ENDINGS)[info.folder ?? "domain"].map((e) => e.replaceAll(".", "\\."));
+  const re = new RegExp(`^[a-z0-9]+(-[a-z0-9]+)*(${endings.join("|")})${info.testSupport ? "" : "(\\.test)?"}\\.ts$`);
   const name = norm(file).split("/").pop()!;
   return re.test(name) ? null : { file, rule: "file-name", message: `${name} must match ${re}` };
 }
@@ -88,6 +97,9 @@ export function checkImport(file: string, imp: { specifier: string; typeOnly: bo
   const bad = (why: string): Violation => ({ file, rule: "import", message: `${s}: ${why}` });
 
   if (!s.startsWith(".")) {
+    if (from.testSupport) {
+      return s === "@ai-office/shared" || s.startsWith("node:") || s === "vitest" || s.startsWith("vitest/") ? null : bad("__test__ may only import shared, node, vitest, domain, repository ports, core and __test__");
+    }
     if (s === "@ai-office/shared" || s.startsWith("node:")) return null;
     if (s === "vitest" || s.startsWith("vitest/")) return file.endsWith(".test.ts") ? null : bad("only test files may import vitest");
     if (INFRA_ONLY_LIBS.some((l) => (l.endsWith("/") ? s.startsWith(l) : s === l || s.startsWith(l + "/")))) {
@@ -99,10 +111,14 @@ export function checkImport(file: string, imp: { specifier: string; typeOnly: bo
   const root = norm(modulesRoot).replace(/\/$/, "");
   const target = posix.normalize(posix.join(posix.dirname(norm(file)), s.replace(/\.(js|ts)$/, "")));
   if (target.startsWith(posix.dirname(root) + "/core/")) return null;
-  if (!target.startsWith(root + "/")) return from.layer === "infra" ? null : bad("outside modules/ and core/");
+  if (!target.startsWith(root + "/")) return from.layer === "infra" && !from.testSupport ? null : bad("outside modules/ and core/");
 
   const to = classifyPath(target + ".ts", root);
   if (!to) return bad("target is not in a valid modules/ folder layout");
+  if (from.testSupport) {
+    return to.testSupport || to.layer === "domain" || (to.layer === "infra" && to.folder === "adapter") ? null : bad("__test__ may only import domain, repository ports and __test__");
+  }
+  if (to.testSupport) return file.endsWith(".test.ts") ? null : bad("only test files may import __test__");
   if (to.module !== from.module) return bad("modules may not import other modules");
 
   const sameAgg = from.aggregate !== null && from.aggregate === to.aggregate;

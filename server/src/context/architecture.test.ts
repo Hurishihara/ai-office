@@ -23,6 +23,10 @@ describe("checkFileName", () => {
     ["Notes/Note/domain/note.ts", "file-name"],
     ["notes/Note/domain/note.ts", "file-name"],
   ])("rejects %s", (p, rule) => expect(checkFileName(`${R}/${p}`, R)?.rule).toBe(rule));
+  it.each(["__test__/factories/assignment.factory.ts", "__test__/factories/assignment.seeder.ts", "__test__/helpers/temp-sqlite.helper.ts"])
+    ("accepts test support file %s", (p) => expect(checkFileName(`${R}/${p}`, R)).toBeNull());
+  it.each(["__test__/factories/assignment.ts", "__test__/fakes/x.helper.ts", "__test__/loose.ts", "__test__/helpers/x.helper.test.ts"])
+    ("rejects test support file %s", (p) => expect(checkFileName(`${R}/${p}`, R)).not.toBeNull());
   it("handles Windows separators", () => {
     expect(checkFileName("C:\\repo\\server\\src\\modules\\notes\\note\\helpers\\x.ts", "C:\\repo\\server\\src\\modules")?.rule).toBe("unknown-folder");
   });
@@ -72,6 +76,21 @@ describe("checkImport", () => {
     expect(checkImport(`${R}/m/application/services/w.service.ts`, { specifier: "./v.service.js", typeOnly: false }, R)).toBeNull());
   it("non-test files may not import vitest in any layer", () =>
     expect(checkImport(uc, { specifier: "vitest", typeOnly: false }, R)?.rule).toBe("import"));
+  it("only test files may import __test__", () => {
+    const imp = { specifier: "../../../../__test__/factories/assignment.factory.js", typeOnly: false };
+    expect(checkImport(`${R}/assignments/assignment/application/usecases/start-assignment.usecase.test.ts`, imp, R)).toBeNull();
+    expect(checkImport(`${R}/assignments/assignment/application/usecases/start-assignment.usecase.ts`, imp, R)?.rule).toBe("import");
+  });
+  it("__test__ may import domain and repository ports of any module, not implementations or infra libs", () => {
+    const f = `${R}/__test__/factories/assignment.seeder.ts`;
+    expect(checkImport(f, { specifier: "../../assignments/assignment/domain/assignment.js", typeOnly: false }, R)).toBeNull();
+    expect(checkImport(f, { specifier: "../../assignments/assignment/infra/adapter/assignment.repository.js", typeOnly: true }, R)).toBeNull();
+    expect(checkImport(f, { specifier: "../../assignments/assignment/infra/persistence/sqlite-assignment.repository.js", typeOnly: false }, R)).not.toBeNull();
+    expect(checkImport(f, { specifier: "../../assignments/assignment/application/usecases/start-assignment.usecase.js", typeOnly: false }, R)).not.toBeNull();
+    expect(checkImport(f, { specifier: "../helpers/temp-sqlite.helper.js", typeOnly: false }, R)).toBeNull();
+    expect(checkImport(f, { specifier: "better-sqlite3", typeOnly: false }, R)).not.toBeNull();
+    expect(checkImport(f, { specifier: "vitest", typeOnly: false }, R)).toBeNull();
+  });
   it("no module imports another module", () =>
     expect(checkImport(`${R}/assignments/assignment/infra/external/openrouter-post-writer.external.ts`, { specifier: "../../../../notes/note/domain/note.js", typeOnly: true }, R)?.rule).toBe("import"));
 });
@@ -97,5 +116,15 @@ describe("eslint config", { timeout: 30_000 }, () => {
   it("flags infra-only libs in domain but allows vitest in tests", async () => {
     expect(await lint("src/modules/a/agg/domain/agg.ts", `import express from "express";`)).toContain("@typescript-eslint/no-restricted-imports");
     expect(await lint("src/modules/a/agg/domain/agg.test.ts", `import { it } from "vitest";`)).toEqual([]);
+  });
+  const tf = "../../../../__test__/factories/x.factory.js";
+  it("flags a non-test file importing __test__ but not a test file", async () => {
+    expect(await lint(uc, `import { makeX } from "${tf}";`)).toContain("@typescript-eslint/no-restricted-imports");
+    expect(await lint("src/modules/a/agg/application/usecases/do-thing.usecase.test.ts", `import { makeX } from "${tf}";`)).toEqual([]);
+  });
+  it("names __test__ files and allows the __test__ folder", async () => {
+    expect(await lint("src/modules/__test__/factories/Bad.ts", `export {};`)).toContain("check-file/filename-naming-convention");
+    expect(await lint("src/modules/__test__/factories/agg.factory.ts", `export {};`)).toEqual([]);
+    expect(await lint("src/modules/__test__/helpers/temp-db.helper.ts", `export {};`)).toEqual([]);
   });
 });
