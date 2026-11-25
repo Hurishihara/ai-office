@@ -101,3 +101,19 @@ Naming is enforced by ESLint (`check-file/filename-naming-convention` + folder-t
 ## Left to the builder
 
 Exact ESLint glob patterns; how the architecture test parses imports (regex over `import … from` is enough); wording and examples in the `.md` files.
+
+## Addendum 2026-11-25 — shared test data (`__test__/`) and mocks (approved by owner)
+
+**Why:** tests need valid aggregates and seeded databases over and over; copying setup into every test file is noise. Port stand-ins don't need hand-written classes.
+
+**Decided (owner):**
+- Ports in use-case and controller tests are Vitest mocks (`vi.fn()`), checked with `satisfies <Port>`, written inside the test. No hand-written fake classes.
+- Shared test data lives in `server/src/modules/__test__/`:
+  - `factories/<aggregate>.factory.ts` — `make<Aggregate>(overrides: Partial<<Aggregate>Props> = {}): <Aggregate>` builds a valid aggregate with defaults.
+  - `factories/<aggregate>.seeder.ts` — `seed<Aggregate>s(repo: <Aggregate>Repository, items?: Partial<<Aggregate>Props>[])` saves factory-built aggregates through a (real) repository, for `infra/persistence` tests.
+  - `helpers/<name>.helper.ts` — shared test utilities (e.g. a temp SQLite file with cleanup).
+
+**Claude's calls:**
+- `__test__` is a reserved folder, not a module: the checker applies only `__test__` rules to it (folders `factories/`, `helpers/`; endings `.factory.ts`, `.seeder.ts`, `.helper.ts`; kebab-case names; no `.test.ts` files inside it).
+- Only `*.test.ts` files may import from `__test__/`; production code importing it fails `npm test` and lint.
+- `__test__` files may import any module's `domain/` and `infra/adapter/`, `core/`, `@ai-office/shared`, `node:*`, `vitest`, and other `__test__` files — and nothing else (no application/infra implementations; helpers that need a real repository receive it as a parameter).

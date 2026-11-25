@@ -229,3 +229,60 @@ describe("eslint config", () => {
 ## Done when
 
 `npm test` and `npm run lint` pass; a file dropped into `server/src/modules/` with a wrong name or a forbidden import fails both; `CLAUDE.md` points agents to `module-layer.md`.
+
+---
+
+### Task 4 (addendum): `__test__/` factories, seeders, helpers; mocks for ports
+
+**Spec:** the 2026-11-25 Addendum section of the design doc.
+
+**Files:**
+- Modify: `server/src/context/architecture.ts`, `server/src/context/architecture.test.ts`, `server/eslint.config.ts`
+- Modify: `server/src/context/naming-convention.md`, `module-layer.md`, `application-layer.md`, `infra-layer.md`, `domain-layer.md` (only where they mention fakes)
+
+**Interfaces:**
+- `classifyPath` keeps its signature. A path whose first segment under `modulesRoot` is `__test__` is classified as test support. Extend `PathInfo` with `testSupport?: boolean`, or return a distinct shape; either way `checkFileName` and `checkImport` must handle it explicitly.
+- `checkFileName` for `__test__/factories/*`: `<kebab>.factory.ts` or `<kebab>.seeder.ts`. For `__test__/helpers/*`: `<kebab>.helper.ts`. Anything else under `__test__` (other folders, files directly in `__test__/`, `*.test.ts`) gives `unknown-folder` or `file-name`.
+- The kebab-case module-name check must not reject `__test__`. It is the only reserved name.
+- `checkImport` gains two rules:
+  1. From any file under `modules/` that is not `__test__`: a target inside `__test__/` is allowed only when the importing file ends in `.test.ts`.
+  2. From a `__test__` file:
+     - Allowed: any module's `domain/` and `infra/adapter/`, other `__test__` files, `core/`, `@ai-office/shared`, `node:*` and `vitest`.
+     - Everything else is a violation: application, the other infra folders, `INFRA_ONLY_LIBS`, other packages, and old code under `src/`.
+- ESLint:
+  - Naming globs: `src/modules/__test__/factories/*.ts` → `.factory` | `.seeder`; `src/modules/__test__/helpers/*.ts` → `.helper`.
+  - The folder kebab-case rule must allow `__test__`.
+  - Non-test files may not import `**/__test__/**`. That is a `no-restricted-imports` pattern on `src/modules/**/*.ts` that excludes `**/*.test.ts` through `ignores`.
+- Docs:
+  - `naming-convention.md` gains the three rows.
+  - Every "fakes" mention becomes "mock ports with `vi.fn()`, typed with `satisfies <Port>`, inside the test". Controller tests mock the use case the same way, as `{ execute: vi.fn() } satisfies Pick<UseCase, "execute">`.
+  - `module-layer.md` gets the `__test__` folder in the tree, the rule that only `*.test.ts` files import it, and its import rules.
+  - `infra-layer.md` persistence tests use `seed<Aggregate>s` against a real repository on a temp DB from `helpers/`.
+
+- [ ] **Step 1: Write the failing tests** (`R` as in Task 1)
+
+```ts
+it.each(["__test__/factories/assignment.factory.ts", "__test__/factories/assignment.seeder.ts", "__test__/helpers/temp-sqlite.helper.ts"])
+  ("accepts test support file %s", (p) => expect(checkFileName(`${R}/${p}`, R)).toBeNull());
+it.each(["__test__/factories/assignment.ts", "__test__/fakes/x.helper.ts", "__test__/loose.ts", "__test__/helpers/x.helper.test.ts"])
+  ("rejects test support file %s", (p) => expect(checkFileName(`${R}/${p}`, R)).not.toBeNull());
+it("only test files may import __test__", () => {
+  const imp = { specifier: "../../../__test__/factories/assignment.factory.js", typeOnly: false };
+  expect(checkImport(`${R}/assignments/assignment/application/usecases/start-assignment.usecase.test.ts`, { ...imp, specifier: "../../../../__test__/factories/assignment.factory.js" }, R)).toBeNull();
+  expect(checkImport(`${R}/assignments/assignment/application/usecases/start-assignment.usecase.ts`, { ...imp, specifier: "../../../../__test__/factories/assignment.factory.js" }, R)?.rule).toBe("import");
+});
+it("__test__ may import domain and repository ports of any module, not implementations or infra libs", () => {
+  const f = `${R}/__test__/factories/assignment.seeder.ts`;
+  expect(checkImport(f, { specifier: "../../assignments/assignment/domain/assignment.js", typeOnly: false }, R)).toBeNull();
+  expect(checkImport(f, { specifier: "../../assignments/assignment/infra/adapter/assignment.repository.js", typeOnly: true }, R)).toBeNull();
+  expect(checkImport(f, { specifier: "../../assignments/assignment/infra/persistence/sqlite-assignment.repository.js", typeOnly: false }, R)).not.toBeNull();
+  expect(checkImport(f, { specifier: "better-sqlite3", typeOnly: false }, R)).not.toBeNull();
+  expect(checkImport(f, { specifier: "vitest", typeOnly: false }, R)).toBeNull();
+});
+// ESLint block: a non-test use case importing ../../../../__test__/factories/x.factory.js is flagged; the same import from x.usecase.test.ts is clean; src/modules/__test__/factories/Bad.ts is flagged by check-file.
+```
+
+- [ ] **Step 2: Run** — `npm test -w @ai-office/server -- src/context` → FAIL.
+- [ ] **Step 3: Implement the checker, the ESLint and the doc changes.**
+- [ ] **Step 4: Run** — `npm test` (both workspaces) → PASS; `npm run lint` → exit 0; `grep -rn -i "fake" server/src/context/*.md` → no hits that tell readers to write fake classes.
+- [ ] **Step 5: Commit** — `test(server): __test__ factories, seeders and helpers in the DDD checker` (checker + ESLint), then `docs: mock ports with vi.fn and shared test data in __test__` (docs).
