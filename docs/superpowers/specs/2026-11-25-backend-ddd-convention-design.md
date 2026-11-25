@@ -93,7 +93,7 @@ Naming is enforced by ESLint (`check-file/filename-naming-convention` + folder-t
 - `server/src/context/module-layer.md` — entry point: tree, dependency rules, link to naming, how to add a module/aggregate, how to migrate old code.
 - `server/src/context/naming-convention.md` — the only place naming rules are written (table, casing, class names, tech prefix, `execute`); other files link to it. *(Added by owner 2026-11-25.)*
 - `server/src/context/domain-layer.md`, `application-layer.md`, `infra-layer.md` — per layer: what belongs, folder rules, example from the `Assignment` aggregate, first test, checklist.
-- `server/src/context/architecture.test.ts` — import + naming rules; passes trivially while `modules/` is empty.
+- `server/test/architecture/architecture.test.ts` — import + naming rules; passes trivially while `modules/` is empty.
 - `eslint.config.js` (server) + `npm run lint`; dev deps `eslint`, `typescript-eslint`, `eslint-plugin-check-file`.
 - Root `CLAUDE.md`: backend work → read `server/src/context/module-layer.md` first, then the layer file.
 - `server/vitest.config.ts` includes `src/**/*.test.ts` (co-located tests) besides `test/`.
@@ -117,3 +117,5 @@ Exact ESLint glob patterns; how the architecture test parses imports (regex over
 - `__test__` is a reserved folder, not a module: the checker applies only `__test__` rules to it (folders `factories/`, `helpers/`; endings `.factory.ts`, `.seeder.ts`, `.helper.ts`; kebab-case names; no `.test.ts` files inside it).
 - Only `*.test.ts` files may import from `__test__/`; production code importing it fails `npm test` and lint.
 - `__test__` files may import any module's `domain/` and `infra/adapter/`, `core/`, `@ai-office/shared`, `node:*`, `vitest`, and other `__test__` files — and nothing else (no application/infra implementations; helpers that need a real repository receive it as a parameter).
+
+2026-11-25: checker moved to `server/test/architecture/` (owner): `context/` holds only `.md` instructions.

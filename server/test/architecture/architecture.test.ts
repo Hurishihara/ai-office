@@ -96,7 +96,7 @@ describe("checkImport", () => {
 });
 
 it("the real src/modules tree follows the convention", () => {
-  expect(scanModules(fileURLToPath(new URL("../modules", import.meta.url)))).toEqual([]);
+  expect(scanModules(fileURLToPath(new URL("../../src/modules", import.meta.url)))).toEqual([]);
 });
 
 describe("eslint config", { timeout: 30_000 }, () => {

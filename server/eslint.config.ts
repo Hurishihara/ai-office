@@ -1,9 +1,9 @@
 // Root typescript@6 exists only for typescript-eslint; remove once it supports TS 7.
 import tseslint from "typescript-eslint";
 import checkFile from "eslint-plugin-check-file";
-import { INFRA_ONLY_LIBS } from "./src/context/architecture.js";
+import { INFRA_ONLY_LIBS } from "./test/architecture/architecture.js";
 
-// Cross-module imports are not checked here (globs can't compare module names); src/context/architecture.test.ts covers them.
+// Cross-module imports are not checked here (globs can't compare module names); test/architecture/architecture.test.ts covers them.
 const libPatterns = INFRA_ONLY_LIBS.flatMap((l) => (l.endsWith("/") ? [`${l}*`] : [l, `${l}/*`]));
 type Pattern = string | { group: string[]; allowTypeImports?: boolean };
 // the rule requires all-string or all-object patterns, so normalise to objects

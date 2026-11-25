@@ -62,7 +62,7 @@ CLAUDE.md                              new (repo root)
 ### Task 1: Architecture checker and test
 
 **Files:**
-- Create: `server/src/context/architecture.ts`, `server/src/context/architecture.test.ts`
+- Create: `server/test/architecture/architecture.ts`, `server/test/architecture/architecture.test.ts`
 - Modify: `server/vitest.config.ts` (`include: ["test/**/*.test.ts", "src/**/*.test.ts"]`)
 
 **Interfaces:**
@@ -154,9 +154,9 @@ it("the real src/modules tree follows the convention", () => {
 ```
 
 - [ ] **Step 2: Run** — `npm test -w @ai-office/server -- src/context` → FAIL (`architecture.js` missing).
-- [ ] **Step 3: Implement `server/src/context/architecture.ts`; update `vitest.config.ts` include.**
+- [ ] **Step 3: Implement `server/test/architecture/architecture.ts`; update `vitest.config.ts` include.**
 - [ ] **Step 4: Run** — `npm test -w @ai-office/server` → all existing tests plus the new ones PASS (`src/modules` doesn't exist yet, so the real scan returns `[]`).
-- [ ] **Step 5: Commit** — `git add server/src/context/architecture.ts server/src/context/architecture.test.ts server/vitest.config.ts && git commit -m "test(server): architecture checker for DDD imports and file names"`
+- [ ] **Step 5: Commit** — `git add server/test/architecture/architecture.ts server/test/architecture/architecture.test.ts server/vitest.config.ts && git commit -m "test(server): architecture checker for DDD imports and file names"`
 
 ---
 
@@ -165,7 +165,7 @@ it("the real src/modules tree follows the convention", () => {
 **Files:**
 - Create: `server/eslint.config.ts`
 - Modify: `server/package.json` (script `"lint": "eslint src/modules src/core --no-error-on-unmatched-pattern"`; dev deps), root `package.json` (script `"lint": "npm run lint -w @ai-office/server"`)
-- Test: `server/src/context/architecture.test.ts` (add an ESLint block)
+- Test: `server/test/architecture/architecture.test.ts` (add an ESLint block)
 
 **Interfaces:**
 - Consumes: `INFRA_ONLY_LIBS` from Task 1 (import it into `eslint.config.ts` so the list lives once).
@@ -201,7 +201,7 @@ describe("eslint config", () => {
 - [ ] **Step 3: Run** — `npm test -w @ai-office/server -- src/context` → FAIL (no config).
 - [ ] **Step 4: Implement `server/eslint.config.ts` and the scripts.**
 - [ ] **Step 5: Run** — `npm test -w @ai-office/server` → PASS; `npm run lint` → exit 0 with no output on today's code (Review Focus 5).
-- [ ] **Step 6: Commit** — `git add server/eslint.config.ts server/package.json package.json package-lock.json server/src/context/architecture.test.ts && git commit -m "chore(server): eslint boundaries and file naming for modules"`
+- [ ] **Step 6: Commit** — `git add server/eslint.config.ts server/package.json package.json package-lock.json server/test/architecture/architecture.test.ts && git commit -m "chore(server): eslint boundaries and file naming for modules"`
 
 ---
 
@@ -215,7 +215,7 @@ describe("eslint config", () => {
 - Naming lives **only** in `naming-convention.md`; every other file links to it and never repeats a naming row.
   - `naming-convention.md`: the whole file-name table (folder → ending → example file → example class); lowercase kebab-case; tests `<name>.<kind>.test.ts` beside the file; value objects, use cases and services named by their own name (`round.value-object.ts`, `start-assignment.usecase.ts`); use case file `<verb>-<aggregate>`; implementations take a technology prefix (`sqlite-assignment.repository.ts` → `SqliteAssignmentRepository`, `langgraph-assignment-workflow.service.ts`, `openrouter-post-writer.external.ts`); class names PascalCase of the file name minus the kind, except implementations which keep the kind word where it reads naturally (`SqliteAssignmentRepository`, `AssignmentMapper`); ports are plain nouns with no `I` prefix; use cases expose one `execute(input)`; mappers expose `toDomain` / `toPersistence`; a closing section "Enforced by `architecture.test.ts` + lint: folder and file ending. Not enforced (review it): class names, tech prefix, `execute`."
 - Produces — each layer file has the same five sections: **What belongs here / What doesn't**, **Folders** (which subfolders, what goes in each, then "names: see `naming-convention.md`"), **Example** (from the future `assignments` module: `Assignment` aggregate with `submitDraft()`, `recordReview()`, `approve()`, `revise(feedback)` throwing past round 3, `discard()`; `Round` value object; `StartAssignment` use case with `execute(input)`; `AssignmentRepository` port; `SqliteAssignmentRepository` + `AssignmentMapper.toDomain/toPersistence`; `AssignmentWorkflow` service port + `LangGraphAssignmentWorkflow`; `OpenRouterPostWriter` implementing `PostWriter`), **First test (TDD)** (its row of the spec's test table), **Checklist**.
-  - `module-layer.md`: full tree; the six dependency rules; a link to `naming-convention.md` (no table); what goes in `src/core/` (only what every module uses: `EventBus`, `NotFoundError`/`ConflictError`/`BadRequestError`, `readJson`/`writeJson`) and that nothing module-specific goes there; wiring only in `app.ts`/`index.ts`; how to add a module and an aggregate; how to migrate existing code one module at a time (move tests beside files, keep behaviour, `npm test` + `npm run lint` green after each move); "rules are enforced by `src/context/architecture.test.ts` and `npm run lint`".
+  - `module-layer.md`: full tree; the six dependency rules; a link to `naming-convention.md` (no table); what goes in `src/core/` (only what every module uses: `EventBus`, `NotFoundError`/`ConflictError`/`BadRequestError`, `readJson`/`writeJson`) and that nothing module-specific goes there; wiring only in `app.ts`/`index.ts`; how to add a module and an aggregate; how to migrate existing code one module at a time (move tests beside files, keep behaviour, `npm test` + `npm run lint` green after each move); "rules are enforced by `test/architecture/architecture.test.ts` and `npm run lint`".
   - Domain rules to state: OOP classes; value objects validate in the constructor or a static `create()`, are immutable, compare with `equals()`; aggregates guard their own invariants and expose intention-revealing methods, no public setters; no I/O, no libraries except `@ai-office/shared` types.
   - `CLAUDE.md` (root): "Backend (`server/`) work: read `server/src/context/module-layer.md` first, then the layer file for the folder you touch. Creating or renaming a file: `server/src/context/naming-convention.md`. Run `npm test` and `npm run lint` before committing. Old code outside `server/src/modules/` is being migrated; don't add new code there."
 
@@ -237,7 +237,7 @@ describe("eslint config", () => {
 **Spec:** the 2026-11-25 Addendum section of the design doc.
 
 **Files:**
-- Modify: `server/src/context/architecture.ts`, `server/src/context/architecture.test.ts`, `server/eslint.config.ts`
+- Modify: `server/test/architecture/architecture.ts`, `server/test/architecture/architecture.test.ts`, `server/eslint.config.ts`
 - Modify: `server/src/context/naming-convention.md`, `module-layer.md`, `application-layer.md`, `infra-layer.md`, `domain-layer.md` (only where they mention fakes)
 
 **Interfaces:**

@@ -78,6 +78,6 @@ Old code outside `modules/` moves one module at a time, each with its own plan.
 
 ## Enforcement
 
-Rules are enforced by `src/context/architecture.test.ts` (`npm test`) and `npm run lint`.
+Rules are enforced by `test/architecture/architecture.test.ts` (`npm test`) and `npm run lint`.
 ESLint is a fast subset for in-editor feedback; `npm test` is authoritative. Layout (unknown folders), cross-aggregate, cross-module, old-code and domain-package rules are test-only. Rule 6 (`core/` imports no module) is lint-only.
 - The root `typescript@^6` devDependency exists only for typescript-eslint.
