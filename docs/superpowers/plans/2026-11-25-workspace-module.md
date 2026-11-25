@@ -13,7 +13,7 @@
 
 ## Global Constraints
 
-- Pure refactor: `GET/PUT /api/preferences`, `GET/PUT /api/settings`, `GET /api/models?role=&freeOnly=` keep status codes, response JSON and messages. `data/preferences.json` and `data/settings.json` keep path and shape.
+- Pure refactor: `GET/PUT /api/preferences`, `GET/PUT /api/settings`, `GET /api/models?role=&freeOnly=` keep status codes, response JSON shape, the 400 `{ error: "<field>: <message>; …" }` format and the 502 message. `data/preferences.json` and `data/settings.json` keep path and shape.
 - Preferences: `tone`, `audience`, `hashtags`, `extra` are strings ≤ 2,000 chars; `emoji` ∈ `none` | `light` | `heavy`; defaults `{ tone: "", audience: "", emoji: "light", hashtags: "", extra: "" }`.
 - Settings: `writerModel`, `qaModel` non-empty strings (not trimmed, as today); defaults come from config (`.env`) via `index.ts`.
 - Models: keep only `supportsTools`; if `freeOnly`, keep only `free`; sort by `name` with `localeCompare`; `role` is `"qa"` when the query says `qa`, otherwise `"writer"`; `freeOnly` is true unless the query is exactly `"false"`; source `https://openrouter.ai/api/v1/models`, cache 3,600,000 ms, stale cache served when the fetch fails; no cache and fetch fails → 502 `{ error: "Could not reach OpenRouter to load the model list. Try again in a moment." }`.
