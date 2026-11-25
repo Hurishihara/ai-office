@@ -58,6 +58,9 @@ export function checkFileName(file: string, modulesRoot: string): Violation | nu
   if (!relSegments(file, modulesRoot)) return null;
   const info = classifyPath(file, modulesRoot);
   if (!info) return { file, rule: "unknown-folder", message: "file is not in a valid modules/ folder layout" };
+  const folders = relSegments(file, modulesRoot)!.slice(0, info.aggregate === null ? 1 : 2);
+  const badDir = folders.find((d) => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(d));
+  if (badDir) return { file, rule: "file-name", message: `folder ${badDir} must be kebab-case` };
   const endings = ENDINGS[info.folder ?? "domain"].map((e) => e.replaceAll(".", "\\."));
   const re = new RegExp(`^[a-z0-9]+(-[a-z0-9]+)*(${endings.join("|")})(\\.test)?\\.ts$`);
   const name = norm(file).split("/").pop()!;
@@ -86,7 +89,7 @@ export function checkImport(file: string, imp: { specifier: string; typeOnly: bo
 
   if (!s.startsWith(".")) {
     if (s === "@ai-office/shared" || s.startsWith("node:")) return null;
-    if (file.endsWith(".test.ts") && (s === "vitest" || s.startsWith("vitest/"))) return null;
+    if (s === "vitest" || s.startsWith("vitest/")) return file.endsWith(".test.ts") ? null : bad("only test files may import vitest");
     if (INFRA_ONLY_LIBS.some((l) => (l.endsWith("/") ? s.startsWith(l) : s === l || s.startsWith(l + "/")))) {
       return from.layer === "infra" ? null : bad("infra-only library outside infra/");
     }
@@ -104,10 +107,11 @@ export function checkImport(file: string, imp: { specifier: string; typeOnly: bo
 
   const sameAgg = from.aggregate !== null && from.aggregate === to.aggregate;
   let ok: boolean;
-  if (from.aggregate === null) ok = from.layer === "infra" || to.layer === "domain"; // module-level services
+  if (from.aggregate === null) ok = from.layer === "infra" || to.layer === "domain" || to.layer === "application"; // module-level services
   else if (from.layer === "domain") ok = to.layer === "domain" && sameAgg;
   else if (from.layer === "application") {
-    ok = to.layer === "domain" || (sameAgg && (to.layer === "application" || (to.folder === "adapter" && imp.typeOnly)));
+    ok = to.layer === "domain" || (to.aggregate === null && to.layer === "application") ||
+      (sameAgg && (to.layer === "application" || (to.folder === "adapter" && imp.typeOnly)));
   } else ok = true;
   return ok ? null : bad(`${from.layer} may not import ${to.layer}${to.folder ? "/" + to.folder : ""}`);
 }

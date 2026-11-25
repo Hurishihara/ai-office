@@ -20,6 +20,8 @@ describe("checkFileName", () => {
     ["notes/note/infra/adapter/note.mapper.ts", "file-name"],
     ["notes/note/helpers/x.ts", "unknown-folder"],
     ["notes/loose.ts", "unknown-folder"],
+    ["Notes/Note/domain/note.ts", "file-name"],
+    ["notes/Note/domain/note.ts", "file-name"],
   ])("rejects %s", (p, rule) => expect(checkFileName(`${R}/${p}`, R)?.rule).toBe(rule));
   it("handles Windows separators", () => {
     expect(checkFileName("C:\\repo\\server\\src\\modules\\notes\\note\\helpers\\x.ts", "C:\\repo\\server\\src\\modules")?.rule).toBe("unknown-folder");
@@ -64,6 +66,12 @@ describe("checkImport", () => {
     expect(checkImport(`${R}/notes/note/domain/note.ts`, v, R)).not.toBeNull();
     expect(checkImport(`${R}/notes/note/application/usecases/add-note.usecase.test.ts`, v, R)).toBeNull();
   });
+  it("use cases may import the module-level service port", () =>
+    expect(checkImport(`${R}/m/a/application/usecases/start-a.usecase.ts`, { specifier: "../../../application/services/w.service.js", typeOnly: true }, R)).toBeNull());
+  it("module-level application services may import sibling services", () =>
+    expect(checkImport(`${R}/m/application/services/w.service.ts`, { specifier: "./v.service.js", typeOnly: false }, R)).toBeNull());
+  it("non-test files may not import vitest in any layer", () =>
+    expect(checkImport(uc, { specifier: "vitest", typeOnly: false }, R)?.rule).toBe("import"));
   it("no module imports another module", () =>
     expect(checkImport(`${R}/assignments/assignment/infra/external/openrouter-post-writer.external.ts`, { specifier: "../../../../notes/note/domain/note.js", typeOnly: true }, R)?.rule).toBe("import"));
 });
