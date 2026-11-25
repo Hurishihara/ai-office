@@ -86,6 +86,7 @@ export function checkImport(file: string, imp: { specifier: string; typeOnly: bo
 
   if (!s.startsWith(".")) {
     if (s === "@ai-office/shared" || s.startsWith("node:")) return null;
+    if (file.endsWith(".test.ts") && (s === "vitest" || s.startsWith("vitest/"))) return null;
     if (INFRA_ONLY_LIBS.some((l) => (l.endsWith("/") ? s.startsWith(l) : s === l || s.startsWith(l + "/")))) {
       return from.layer === "infra" ? null : bad("infra-only library outside infra/");
     }

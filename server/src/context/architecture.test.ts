@@ -57,6 +57,12 @@ describe("checkImport", () => {
     expect(checkImport(uc, { specifier: "@langchain/langgraph", typeOnly: false }, R)).not.toBeNull();
     expect(checkImport(`${R}/assignments/infra/services/langgraph-assignment-workflow.service.ts`, { specifier: "@langchain/langgraph", typeOnly: false }, R)).toBeNull();
   });
+  it("only test files may import vitest", () => {
+    const v = { specifier: "vitest", typeOnly: false };
+    expect(checkImport(`${R}/notes/note/domain/note.test.ts`, v, R)).toBeNull();
+    expect(checkImport(`${R}/notes/note/domain/note.ts`, v, R)).not.toBeNull();
+    expect(checkImport(`${R}/notes/note/application/usecases/add-note.usecase.test.ts`, v, R)).toBeNull();
+  });
   it("no module imports another module", () =>
     expect(checkImport(`${R}/assignments/assignment/infra/external/openrouter-post-writer.external.ts`, { specifier: "../../../../notes/note/domain/note.js", typeOnly: true }, R)?.rule).toBe("import"));
 });
