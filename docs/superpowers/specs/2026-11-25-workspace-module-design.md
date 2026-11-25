@@ -1,7 +1,7 @@
 # Migrate core/ + workspace module — Design (short)
 
 Date: 2026-11-25
-Status: draft, awaiting approval
+Status: approved by owner 2026-11-25
 Convention: `server/src/context/*.md`, enforced by `server/test/architecture/` and `npm run lint`.
 
 ## Intent
