@@ -24,7 +24,7 @@ Names: see [naming-convention.md](naming-convention.md).
 
 ## First test (TDD)
 
-Pure unit test of the class. No fakes, no I/O.
+Pure unit test of the class. No mocks, no I/O. Build test aggregates with `make<Aggregate>` from `__test__/factories/` where it helps.
 
 ## Checklist
 

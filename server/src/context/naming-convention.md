@@ -20,6 +20,9 @@ Lowercase kebab-case: `<name>.<kind>.ts`. A test has the same name plus `.test.t
 | Use case | `application/usecases/` | `<verb>-<aggregate>.usecase.ts` | `StartAssignment` |
 | DTO | `infra/interface/` | `<aggregate>.dto.ts` | zod schemas + types |
 | Controller | `infra/interface/` | `<aggregate>.controller.ts` | express router factory |
+| Test factory | `modules/__test__/factories/` | `<aggregate>.factory.ts` | `makeAssignment` |
+| Test seeder | `modules/__test__/factories/` | `<aggregate>.seeder.ts` | `seedAssignments` |
+| Test helper | `modules/__test__/helpers/` | `<name>.helper.ts` | `createTempSqlite` |
 
 ## Rules
 

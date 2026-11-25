@@ -10,6 +10,9 @@ Names: [naming-convention.md](naming-convention.md).
 server/src/
   core/                              shared by all modules only
   context/                           these instruction files + architecture.test.ts
+  modules/__test__/                  shared test data, not a module
+    factories/                       make<Aggregate> and seed<Aggregate>s
+    helpers/                         test utilities, e.g. temp SQLite
   modules/<module>/                  one domain, holds its aggregates
     application/services/            module-level service ports
     infra/services/                  their implementations
@@ -39,6 +42,8 @@ server/src/
 Also:
 - `@ai-office/shared` and `node:*` are importable from every layer.
 - `*.test.ts` files in any layer may import `vitest`. Non-test files may not.
+- Only `*.test.ts` files may import `__test__/`.
+- `__test__/` files import only any module's `domain/` and `infra/adapter/`, `core/`, `@ai-office/shared`, `node:*`, `vitest` and other `__test__/` files. A helper that needs a real repository takes it as a parameter.
 
 ## core/
 
@@ -59,7 +64,7 @@ Only `app.ts` and `index.ts` build implementations and inject them. No other fil
 ## Add an aggregate
 
 1. `<aggregate>/domain/`: aggregate class, test first.
-2. `application/usecases/` (+ `ports/`) with fakes, test first.
+2. `application/usecases/` (+ `ports/`) with mock ports, test first.
 3. `infra/adapter/` repository interface, then `persistence/`, `interface/`, `external/` as needed.
 4. Wire in `app.ts`.
 

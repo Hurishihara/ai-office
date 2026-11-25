@@ -26,11 +26,11 @@ Names: see [naming-convention.md](naming-convention.md).
 
 ## First test (TDD)
 
-Use case with hand-written fakes of its ports. Fakes live inline in the `.test.ts` file (a non-test `fake-*.ts` in `usecases/` would fail naming).
+Use case test with mock ports: `vi.fn()` typed with `satisfies <Port>`, written inside the test. Build aggregates with `make<Aggregate>` from `__test__/factories/`.
 
 ## Checklist
 
-- [ ] Test written first, with fakes, no real library.
+- [ ] Test written first, with mock ports, no real library.
 - [ ] One use case per file, one `execute(input)`.
 - [ ] Rules stay in the domain, the use case only orchestrates.
 - [ ] Imports from `infra/adapter/` are `import type`.

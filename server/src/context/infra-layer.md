@@ -29,9 +29,9 @@ Names: see [naming-convention.md](naming-convention.md).
 
 ## First test (TDD)
 
-- `persistence/`, `services/`: real library on temp files or in memory, never network.
+- `persistence/`, `services/`: real library on temp files or in memory, never network. Persistence tests call `seed<Aggregate>s` from `__test__/factories/` against the real repository on a temp DB from `__test__/helpers/`.
 - `external/`: library client stubbed.
-- `interface/`: supertest against the controller with use-case fakes.
+- `interface/`: supertest against the controller with the use case mocked: `{ execute: vi.fn() } satisfies Pick<UseCase, "execute">`.
 
 ## Checklist
 
